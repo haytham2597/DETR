@@ -12,13 +12,22 @@ public:
 
 	NestedTensor(torch::Tensor tensors)
 	{
+		const int64_t b = tensors.size(0);
+		const int64_t c = tensors.size(1);
+		const int64_t h = tensors.size(2);
+		const int64_t w = tensors.size(3);
 		this->tensors_ = tensors;
-		auto pad_img = torch::zeros({ 1, tensors.size(0),tensors.size(1),tensors.size(2) }, tensors.dtype());
-		auto mask = torch::ones({ 1, 1,tensors.size(1) ,tensors.size(2) }, torch::kBool);
-		pad_img = pad_img.index({ torch::indexing::Slice(torch::indexing::None, tensors.size(0)), torch::indexing::Slice(torch::indexing::None, tensors.size(1)),torch::indexing::Slice(torch::indexing::None, tensors.size(2)) }).copy_(tensors);
-		mask.index_put_({ torch::indexing::Slice(torch::indexing::None, tensors.size(1)), torch::indexing::Slice(torch::indexing::None, tensors.size(2)) }, false);
-		
+		auto mask = torch::ones({ b,h,w}, torch::kBool).fill_(false).to(tensors_.device());
 		this->masks_ = mask;
+		//auto pad_img = torch::zeros({ tensors.sizes() }, tensors.dtype());
+		//pad_img = pad_img.index({ torch::indexing::Slice(torch::indexing::None, tensors.size(0)), torch::indexing::Slice(torch::indexing::None, tensors.size(1)),torch::indexing::Slice(torch::indexing::None, tensors.size(2)) }).copy_(tensors);
+		//mask.index_put_({ torch::indexing::Slice(torch::indexing::None, tensors.size(1)), torch::indexing::Slice(torch::indexing::None, tensors.size(2)) }, false);
+		
+		//this->masks_ = mask;
+	}
+	NestedTensor(std::vector<torch::Tensor> tensors)
+	{
+		
 	}
 	NestedTensor(torch::Tensor tensors, torch::Tensor masks) {
 		tensors_ = tensors;

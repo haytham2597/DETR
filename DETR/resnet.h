@@ -262,7 +262,7 @@ public:
 
     torch::Tensor forward(torch::Tensor x) {
 
-        std::cout << "Size x (from Resnet.h 265): " << x.sizes() << std::endl;
+        //std::cout << "Size x (from Resnet.h 265): " << x.sizes() << std::endl;
         x = conv1->forward(x);
         x = bn1->forward(x);
         x = torch::relu(x);

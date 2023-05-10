@@ -29,8 +29,12 @@ struct CustomStackV2<torch::data::Example<U,V>> : public torch::data::transforms
 		{
 			data.push_back(sample.data);
 			vec.push_back(sample.target);
+			/*for(auto v : sample.target)
+			{
+				std::cout << "Key: " << v.key() << " value: " << v.value() << " " << __FILE__ << std::endl;
+			}*/
 		}
-		return { torch::cat(data), vec };
+		return { torch::stack(data), vec };
 	}
 };
 
@@ -41,6 +45,7 @@ struct CustomStackV2<T<U,V>> : public torch::data::transforms::Collation<T<U,V>,
 	
 };*/
 
+/*
 template<typename T = torch::data::Example<torch::Tensor, std::vector<int>>>
 struct CustomStack;
 
@@ -60,7 +65,7 @@ struct CustomStack<torch::data::Example<torch::Tensor, int>> : public torch::dat
 		}
 		return { torch::cat(data), vec };
 	}
-};
+};*/
 
 /*
  *template <typename T = Example<>>

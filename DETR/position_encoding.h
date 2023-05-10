@@ -22,8 +22,9 @@ public:
 
 /**
  * \brief [WRONG FUNCTIONAL IN PYTHON THE CUMSUM NOT WORKING]
+ * [STABLE WORK HERE]
  */
-class PositionEmbeddingSine : public PositionEncoding
+class PositionEmbeddingSine : public torch::nn::Module
 {
 private:
 	int num_pos_feats_;
@@ -38,15 +39,17 @@ public:
 		this->temperature_ = temperature;
 		this->normalize_ = normalize;
 		this->scale_ = scale;
-		if(this->scale_ == -1)
+		if(this->scale_ == static_cast<double>(-1))
 			this->scale_ = 2 * M_PI;
 	}
 	
-	torch::Tensor forward(NestedTensor nested_tensor) override
+	torch::Tensor forward(NestedTensor nested_tensor)
 	{
 		//auto tuple = nested_tensor.decompose();
 		auto x = nested_tensor.tensors_;
 		auto mask = nested_tensor.masks_;
+		/*std::cout << "x size: " << x.sizes() << std::endl;
+		std::cout << "mask size: " << mask.sizes() << std::endl;*/
 		if (!mask.defined() || mask.numel() == 0)
 			throw std::exception("Mask undefined");
 		auto not_mask = ~mask;
@@ -56,19 +59,16 @@ public:
 		{
 			y_embed = y_embed / (y_embed.index({ sli(), sli(-1, non), sli() }) + eps_) * scale_;
 			x_embed = x_embed / (x_embed.index({ sli(),sli(), sli(-1, non) }) + eps_) * scale_;
-			/*y_embed = (y_embed - 0.5) / (y_embed.select(-1, 1)+eps_)*scale_;
-			x_embed = (x_embed - 0.5) / (x_embed.select(-1, 2) + eps_) * scale_;*/
 		}
-
-		auto dim_t = torch::arange(num_pos_feats_, torch::TensorOptions(torch::kFloat).device(x.device())); //Add device... Line 48 position_encoding.py
-		dim_t = torch::pow(temperature_, (2 * (dim_t / 2) / num_pos_feats_));
-
-		/*for(int i=0;i<dim_t.size(0);i++)
-			dim_t[i] = static_cast<float>(std::pow(temperature_, 2 * static_cast<double>(static_cast<int>(dim_t[i].item<float>() / 2)) / this->num_pos_feats_));*/
-		/*auto pos_x = x_embed.index({ sli(), sli(), sli(), sli(non) }) / dim_t;
-		auto pos_y = y_embed.index({ sli(), sli(), sli(), sli(non) }) / dim_t;*/
-		auto pos_x = x_embed.index({ sli(), sli(), sli(), non }) / dim_t;
-		auto pos_y = y_embed.index({ sli(), sli(), sli(), non }) / dim_t;
+		auto dim_t = torch::arange(num_pos_feats_, torch::TensorOptions(torch::kFloat)).to(x.device()); //Add device... Line 48 position_encoding.py
+		dim_t = torch::pow(temperature_, (2 * dim_t.div(2, "floor") / num_pos_feats_));
+		
+		/*std::cout << "Device x_embed: " << x_embed.get_device() << std::endl;
+		std::cout << "Device dim_t: " << dim_t.get_device() << std::endl;
+		std::cout << "x_embed size: " << x_embed.sizes() << std::endl;
+		std::cout << " size: " << dim_t.sizes() << std::endl;*/
+		auto pos_x = x_embed.index({ sli(), sli(), sli(), non }).div(dim_t);
+		auto pos_y = y_embed.index({ sli(), sli(), sli(), non }).div(dim_t);
 		pos_x = torch::stack({ pos_x.index({sli(), sli(), sli(), sli(0, non, 2)}).sin(), pos_x.index({sli(), sli(), sli(), sli(1, non, 2)}).cos() }, 4).flatten(3);
 		pos_y = torch::stack({ pos_y.index({sli(), sli(), sli(), sli(0, non, 2)}).sin(), pos_y.index({sli(), sli(), sli(), sli(1, non, 2)}).cos() }, 4).flatten(3);
 		auto pos = torch::cat({ pos_y, pos_x }, 3).permute({ 0,3,1,2 });

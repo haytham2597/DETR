@@ -25,6 +25,9 @@
     <Filter Include="Header Files\utils">
       <UniqueIdentifier>{8f228370-3897-4e90-8bb4-9cc7fc778dc8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\modules\linear_sum_assignment">
+      <UniqueIdentifier>{d35f6ae8-2f2f-465e-b6c1-8beca15709bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -68,13 +71,7 @@
     <ClInclude Include="conditional_detr.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="conditional_transformer.h">
-      <Filter>Header Files\models</Filter>
-    </ClInclude>
     <ClInclude Include="attention.h">
-      <Filter>Header Files\libs</Filter>
-    </ClInclude>
-    <ClInclude Include="intermediate_layer_getter.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
     <ClInclude Include="lsap.h">
@@ -88,6 +85,18 @@
     </ClInclude>
     <ClInclude Include="custom_stack.h">
       <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="m_assert.h">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="definitions.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="solver.h">
+      <Filter>Header Files\modules\linear_sum_assignment</Filter>
+    </ClInclude>
+    <ClInclude Include="hungarian_optimize_lsap.h">
+      <Filter>Header Files\libs</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

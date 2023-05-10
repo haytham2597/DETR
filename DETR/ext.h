@@ -5,11 +5,32 @@
 
 #include <opencv2/imgproc.hpp>
 
-bool is_power_of_2(int n)
+bool anyext(torch::Tensor x)
+{
+	for (int i = 0; i < x.size(0); i++)
+		if (x[i].item<bool>())
+			return true;
+	return false;
+}
+std::vector<torch::Tensor> unravel_index(torch::Tensor indices, const at::IntArrayRef shape)
+{
+	std::vector<torch::Tensor> coord;
+	for (int64_t i = shape.size(); i --> 0;) //reverse
+	{
+		coord.push_back(indices % shape[i]);
+		indices = indices / shape[i];
+	}
+	std::reverse(coord.begin(), coord.end());
+	return coord;
+	//return torch::stack(coord, -1);
+}
+
+inline bool is_power_of_2(int n)
 {
 	return ((n & (n - 1)) == 0) && n != 0;
 }
-torch::Tensor inverse_sigmoid(torch::Tensor x, double eps = 1e-5)
+
+inline torch::Tensor inverse_sigmoid(torch::Tensor x, double eps = 1e-5)
 {
 	x = x.clamp(0, 1);
 	return torch::log(x.clamp(eps) / (1 - x).clamp(eps));
@@ -25,21 +46,21 @@ torch::nn::ModuleHolder<Contained> get_activation(std::string activation = "relu
 	return torch::nn::ModuleHolder<torch::nn::GLUImpl>();
 }
 
-torch::Tensor with_pos_embed(torch::Tensor tensor, torch::Tensor pos)
+inline torch::Tensor with_pos_embed(torch::Tensor tensor, torch::Tensor pos)
 {
 	if (!pos.defined() || pos.numel() == 0) //epmpty TODO:TORCH.LUMEL EMPTY
 		return tensor;
 	return tensor + pos;
 }
 
-torch::Tensor with_pos_embed(torch::Tensor tensor, torch::optional<torch::Tensor> pos = torch::nullopt)
+inline torch::Tensor with_pos_embed(torch::Tensor tensor, torch::optional<torch::Tensor> pos = torch::nullopt)
 {
 	if(!pos.has_value())
 		return tensor;
 	return tensor + pos.value();
 }
 
-torch::Tensor sigmoid_focal_loss(torch::Tensor inputs, torch::Tensor targets, torch::Scalar num_boxes, float alpha = 0.25, float gamma = 2)
+inline torch::Tensor sigmoid_focal_loss(torch::Tensor inputs, torch::Tensor targets, torch::Scalar num_boxes, float alpha = 0.25, float gamma = 2)
 {
 	auto prob = inputs.sigmoid();
 	///torch::nn::BCEWithLogitsLossOptions::reduction_t l(torch::kNone);
@@ -55,12 +76,23 @@ torch::Tensor sigmoid_focal_loss(torch::Tensor inputs, torch::Tensor targets, to
 	return loss.mean(1).sum() / num_boxes;
 }
 
-torch::Tensor accuracy(torch::Tensor output, torch::Tensor target)
+inline std::vector<torch::Tensor> accuracy(torch::Tensor output, torch::Tensor target, int topk = 1)
 {
 	if (target.numel() == 0) {
-		//return torch::zeros()
+		return { torch::zeros({0}) };
 	}
-	//auto maxk = torch::max()
+	auto maxk = topk;
+	auto bs = target.size(0);
+	auto pred = std::get<1>(output.topk(maxk, 1, true, true));
+	pred = pred.t();
+	auto correct = pred.eq(target.view({ 1,-1 }).expand_as(pred));
+	std::vector<torch::Tensor> res;
+	for(int i=0;i<topk;i++)
+	{
+		auto correct_k = correct.index({ torch::indexing::Slice(), i }).view({ -1 }).to(torch::kFloat).sum(0);
+		res.push_back(correct_k.mul_(100/bs));
+	}
+	return res;
 }
 
 inline void split_str(std::string const& str, const char delim, std::vector<std::string>& out)
@@ -72,11 +104,12 @@ inline void split_str(std::string const& str, const char delim, std::vector<std:
 	while (std::getline(ss, s, delim))
 		out.push_back(s);
 }
-torch::Tensor cv8uc3ToTensor(cv::Mat frame, bool use_fp32 = true)
+inline torch::Tensor cv8uc3ToTensor(cv::Mat frame, bool use_fp32 = true)
 {
 #ifndef _DEBUG
 	frame.convertTo(frame, use_fp32 ? CV_32FC(frame.channels()) : CV_16FC(frame.channels()));
 #else
+	frame.convertTo(frame, use_fp32 ? CV_32FC(frame.channels()) : CV_16FC(frame.channels()));
 	//frame.convertTo(frame, CV_32FC3);
 #endif
 

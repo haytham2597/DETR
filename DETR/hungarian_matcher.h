@@ -8,11 +8,13 @@
 #include "boxes.h"
 #include "lsap.h"
 
+using namespace torch::indexing;
+
 struct HungarianMatcherImpl : public torch::nn::Module
 {
-	float cost_class_, cost_bbox_, cost_giou_;
+	double cost_class_, cost_bbox_, cost_giou_;
 	HungarianAlgorithm hungarian_ = HungarianAlgorithm();
-	HungarianMatcherImpl(float cost_class = 1, float cost_bbox = 1, float cost_giou = 1)
+	HungarianMatcherImpl(double cost_class = 1, double cost_bbox = 1, double cost_giou = 1)
 	{
 		this->cost_class_ = cost_class;
 		this->cost_bbox_ = cost_bbox;
@@ -49,63 +51,89 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		//TODO: Test this torch::OrderedDict
 		/*torch::OrderedDict<std::string, torch::Tensor> dict;
 		dict["lero"]*/
-		torch::NoGradGuard no_grad;
+		//torch::NoGradGuard no_grad;
+		/*std::cout << "Size pred_logits: " << outputs["pred_logits"].sizes() << " " << __FILE__ << " " << __LINE__ << std::endl;
+		std::cout << "Size pred_boxes: " << outputs["pred_boxes"].sizes() << " " << __FILE__ << " " << __LINE__ << std::endl;*/
+
+		/*auto sizes_pred_logits = outputs["pred_logits"].index({ torch::indexing::Slice(torch::indexing::None, 2) }).sizes();
+		auto bs = sizes_pred_logits[0];
+		auto num_queries = sizes_pred_logits[1];*/
 		auto bs = outputs["pred_logits"].size(0);
 		auto num_queries = outputs["pred_logits"].size(1);
+
 		auto out_prob = outputs["pred_logits"].flatten(0, 1).sigmoid();
 		auto out_bbox = outputs["pred_boxes"].flatten(0, 1);
-
+		//std::cout << "out_prob size and device: " << out_prob.sizes() << " device: " << out_prob.get_device() << " File: " << __FILE__ << "Line: " << __LINE__ << std::endl;
 		std::vector<torch::Tensor> tgt_ids_vec;
 		std::vector<torch::Tensor> tgt_bbox_vec;
-		for(int i=0;i<targets.size();i++)
+
+		//WARNING: Maybe the problem contigous memory is here??
+		for (uint64_t i = 0; i < targets.size(); i++)
 		{
+			/*std::cout << "Label [" << std::to_string(i) << "]" << targets[i]["labels"].sizes() << " File: " << __FILE__ << "Line: " << __LINE__ << std::endl;
+			std::cout << "Boxes [" << std::to_string(i) << "]" << targets[i]["boxes"].sizes() << " File: " << __FILE__ << "Line: " << __LINE__ << std::endl;*/
 			tgt_ids_vec.push_back(targets[i]["labels"]);
-			tgt_ids_vec.push_back(targets[i]["boxes"]);
+			tgt_bbox_vec.push_back(targets[i]["boxes"]);
 		}
+		
 		auto tgt_ids = torch::cat(tgt_ids_vec);
 		auto tgt_bbox = torch::cat(tgt_bbox_vec);
 		float alpha = 0.25;
 		float gamma = 2.0;
-		
+
 		auto neg_cost_class = (1 - alpha) * (out_prob.pow(gamma)) * (-(1 - out_prob + 1e-8).log());
 		auto pos_cost_class = alpha * ((1 - out_prob).pow(gamma)) * (-(out_prob + 1e-8).log());
-		auto cost_class = torch::zeros({ pos_cost_class.size(0), tgt_ids.size(0) }, torch::kFloat32);
 
-		for(int i=0;i<pos_cost_class.size(0);i++)
-		for(int j=0;j<tgt_ids.size(0);j++)
-			cost_class[i][j] = pos_cost_class[i][j] - neg_cost_class[i][j];
+		auto cost_class = pos_cost_class.index({ Slice(), tgt_ids }) - neg_cost_class.index({ Slice(), tgt_ids });
 
+		tgt_bbox = tgt_bbox.to(out_bbox.device());
+		out_bbox = out_bbox.to(tgt_bbox.dtype());
+		/*std::cout << "OutBBox size: " << out_bbox.sizes() << " device: " << out_bbox.get_device() << " dtype: " << out_bbox.dtype().name() << std::endl;
+		std::cout << "tgt_bbox size: " << tgt_bbox.sizes() << " device: " << tgt_bbox.get_device() << " dtype: " << tgt_bbox.dtype().name() << std::endl;*/
 		auto cost_bbox = torch::cdist(out_bbox, tgt_bbox, 1);
 		auto cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox));
-		auto c = this->cost_bbox_ * cost_bbox + this->cost_class_ * cost_class + this->cost_giou_ * cost_giou;
-		c = c.view({ bs, num_queries, -1 }).cpu();
+		cost_class = cost_class.to(cost_bbox.device()).to(cost_bbox.dtype());
+		cost_giou = cost_giou.to(cost_bbox.device()).to(cost_bbox.dtype());
+		/*std::cout << "cost bbox size: " << cost_bbox.sizes() << " device : " << cost_bbox.get_device() << " dtype : " << cost_bbox.dtype().name() << std::endl;
+		std::cout << "cost class size: " << cost_class.sizes() << " device : " << cost_class.get_device() << " dtype : " << cost_class.dtype().name() << std::endl;
+		std::cout << "cost giou size: " << cost_giou.sizes() << " device : " << cost_giou.get_device() << " dtype : " << cost_giou.dtype().name() << std::endl;*/
+		//auto dl = (this->cost_bbox_ * cost_bbox) + (this->cost_class_ * cost_class);
+		auto c = (this->cost_bbox_ * cost_bbox) + (this->cost_class_ * cost_class) + (this->cost_giou_ * cost_giou);
+		//c = c.view({ bs, num_queries, -1 }).cpu();
+		c = c.view({ bs, num_queries, -1 }).to(torch::kCPU);
 
 		std::vector<int64_t> sizes;
 		for (int i = 0; i < static_cast<int64_t>(targets.size()); i++)
 			sizes.push_back(targets[i]["boxes"].size(0));
+		//std::cout << "c size: " << c.sizes() << " device : " << c.get_device() << " dtype : " << c.dtype().name() << std::endl;
+		auto vec_tensor = c.split(at::IntArrayRef(sizes.data(), sizes.size()), -1);
+		//auto vec_tensor = c.split({ sizes.data(), sizes.size() }, -1);
 
-		auto si = torch::from_blob(sizes.data(), { static_cast<long long>(sizes.size()) }, torch::kFloat32).sizes();
-		auto vec_tensor = c.split(si, -1);
-		/*std::vector<int64_t> col;
-		std::vector<int64_t> row;
-		std::vector<std::vector<std::tuple<int64_t, int64_t>>> v;*/
 		std::vector<std::tuple<torch::Tensor, torch::Tensor>> ij;
 		for(int i =0;i<static_cast<int64_t>(vec_tensor.size());i++)
 		{
+			//std::cout << "TensorSize split: " << vec_tensor[i].sizes() << " " << __FILE__ << " " << __LINE__ << std::endl;
 			std::tuple<torch::Tensor, torch::Tensor> v_tuple;
-			if (linear_sum_assignment::solve(vec_tensor[i], false, v_tuple) == 0)
+			int solve = linear_sum_assignment::solve(vec_tensor[i][i], false, v_tuple);
+			std::cout << "Solve result: " << solve << std::endl;
+			ij.push_back(v_tuple);
+			/*if (linear_sum_assignment::solve(vec_tensor[i][i], false, v_tuple) == 0) {
 				ij.push_back(v_tuple);
+			}*/
 		}
-
-		std::vector<std::vector<double>> hung;
+		/*std::vector<std::vector<double>> hung;
 		std::vector<int> assignement;
-		for(int i = 0;i<c.size(0);i++)
+		for (int i = 0; i < c.size(0); i++)
 			hung.push_back({ c[i].data_ptr<double>(), c[i].data_ptr<double>() + c[i].numel() });
 
 		hungarian_.Solve(hung, assignement);
 
-		auto indices = torch::from_blob(assignement.data(), { static_cast<int64_t>(assignement.size()) }, torch::kFloat32);
-		auto resh =indices.reshape({static_cast<int64_t>(hung.size()), -1 });
+		auto indices = torch::from_blob(assignement.data(), { static_cast<int64_t>(assignement.size()) }, torch::kInt);
+		auto resh = indices.reshape({ static_cast<int64_t>(hung.size()), -1 });*/
+		//std::cout << "IJ size: " << ij.size() << std::endl;
+		//std::cout << "HEREEE" << std::endl;
+		return ij;
+		
 		//return resh;
 	}
 };

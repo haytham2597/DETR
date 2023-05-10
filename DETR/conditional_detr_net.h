@@ -7,6 +7,7 @@
 #include "conditional_detr.h"
 #include "custom_stack.h"
 #include "dataset.h"
+#include "cmath"
 
 typedef struct _configs {
 	double lr;
@@ -16,7 +17,7 @@ typedef struct _configs {
 	/**
 	 * \brief if trainBatchSize == -1 is autobatch
 	 */
-	int trainBatchSize = 1;
+	int trainBatchSize = 2;
 	int testBatchSize;
 	bool use_fp32 = true;
 	bool augments = false;
@@ -25,33 +26,39 @@ typedef struct _configs {
 }config;
 
 //Class that use for dataset, augmentation, net, forward, train, etc. Loading all modules
-class conditional_detrnet : public torch::optim::LRScheduler
+//class conditional_detrnet : public torch::optim::LRScheduler
+class conditional_detrnet
 {
 private:
 	
 	torch::Device device;
-	dataset_detr dataset_train_ = dataset_detr();
-	dataset_detr dataset_val = dataset_detr();
+	dataset_detr* dataset_train_ =new dataset_detr();
+	//dataset_detr dataset_val = dataset_detr();
 	Backbone backbone_ = Backbone();
 	ConditionalDETR conditional_detr_;
-	conditional_detr::Transformer transformer_ = conditional_detr::Transformer(256);
+	conditional_detr::Transformer* transformer_ = new conditional_detr::Transformer(256);
 	torch::optim::Optimizer* optimizer = nullptr;
 	SetCriterion criterion;
 	//torch::optim::LRScheduler lr_scheduler = torch::optim::LRScheduler();
-	std::unique_ptr<torch::data::StatelessDataLoader<torch::data::datasets::MapDataset<dataset_detr, CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>>, torch::data::samplers::RandomSampler>> dataloader = nullptr;
+	std::unique_ptr<torch::data::StatelessDataLoader<torch::data::datasets::MapDataset<dataset_detr, CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>>, torch::data::samplers::SequentialSampler>> dataloader = nullptr;
 protected:
 	config params;
 
 public:
-	std::vector<double> get_lrs() override
+	/*std::vector<double> get_lrs() override
 	{
 		std::vector<double> lrs;
 		return lrs;
-	}
-	conditional_detrnet() : LRScheduler(*optimizer), device(torch::kCPU)
+	}*/
+	/*conditional_detrnet() : LRScheduler(*optimizer), device(torch::kCPU)
 	{
 		if (torch::cuda::is_available())
 			device = torch::kCUDA;
+	}*/
+	conditional_detrnet() : device(torch::cuda::is_available() ? torch::kCUDA :torch::kCPU)
+	{
+		/*if (torch::cuda::is_available())
+			device = torch::kCUDA;*/
 	}
 	conditional_detrnet(int num_class, int num_queries = 300) : conditional_detrnet()
 	{
@@ -60,11 +67,6 @@ public:
 
 		build_module();
 
-		std::vector<std::string> images;
-		cv::glob("D://Datasets//ContainerGeneratorv10//images//train", images);
-		std::vector<std::string> labels;
-		cv::glob("D://Datasets//ContainerGeneratorv10//labels//train", labels);
-		dataset_train_.add_data(images, labels);
 	}
 	void build_module()
 	{
@@ -81,7 +83,8 @@ public:
 			if(v.requires_grad())
 				num_parameters+=v.numel();
 		}
-		std::cout << "Number of parameters: " << std::to_string(num_parameters) << std::endl;
+		MESSAGE_LOG("Number of Parameters: " + std::to_string(num_parameters))
+		//std::cout << "Number of parameters: " << std::to_string(num_parameters) << std::endl;
 
 		if (optimizer == nullptr)
 			optimizer = new torch::optim::AdamW(conditional_detr_.parameters(), torch::optim::AdamWOptions(params.lr).weight_decay(params.weight_decays));
@@ -103,56 +106,81 @@ public:
 			trainnet();
 			valnet();
 
-			this->step(); //scheduler step
+			//this->step(); //scheduler step
 		}
 	}
 	void trainnet()
 	{
+		MESSAGE_LOG("Trainnet")
+		conditional_detr_.train();
+		criterion.train();
+		//torch::NoGradGuard noGrad;
+		std::vector<std::string> images;
+		cv::glob("D://Datasets//TZ_Contenedores_Chasis//ContainerGeneratorv10//images//train", images);
+		std::vector<std::string> labels;
+		cv::glob("D://Datasets//TZ_Contenedores_Chasis//ContainerGeneratorv10//labels//train", labels);
+		dataset_train_->add_data(images, labels);
+
 		if(dataloader == nullptr)
 		{
-			
-			/*auto transf = torch::data::transforms::Stack<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>();*/
-			auto transf = dataset_train_.map(CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>());
-			/*auto myset = dataset_train_.map(torch::data::transforms::Collate<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>([](std::vector<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>> e){
-				
-				return std::move(e.front());
-			}));*/
-			//auto dla = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(std::move(transf), params.trainBatchSize);;
-			dataloader = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(std::move(transf), params.trainBatchSize);
+			auto transf = dataset_train_->map(CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>());
+			dataloader = torch::data::make_data_loader<torch::data::samplers::SequentialSampler>(std::move(transf), params.trainBatchSize);
 		}
 		const auto start = std::chrono::high_resolution_clock::now();
 		int batch_index = 0;
+
 		for (auto& batch : *dataloader)
 		{
 			auto da = batch.data.to(this->device);
-			for (int i = 0; i < batch.target.size(); i++)
-				for (auto n : batch.target[i])
+			for (uint64_t i = 0; i < batch.target.size(); i++) {
+				for (auto& n : batch.target[i]) {
 					n.value().to(this->device);
-
+					//MESSAGE_LOG("BatchTarget Name and Device: " + n.key() + ", " + std::to_string(n.value().get_device()))
+					//std::cout << "BatchTarget: ["<< n.key()<< "]" << n.value() << std::endl;
+				}
+			}
+			//std::cout << "Size da.size(): " << da.sizes() << std::endl;
 			auto sample = conditional_detr_.forward(NestedTensor(da));
 			auto loss = criterion.forward(sample, batch.target);
 			
-			optimizer->zero_grad();
+			
 			std::vector<torch::Tensor> losses;
-			for (auto v : loss)
-			for (auto u : criterion.weight_dict_) {
+			for (const auto& v : loss)
+			for (const auto& u : criterion.weight_dict_) {
 				if (u.first == v.first) {
-					std::cout << "Loss name: " << v.first << " val: " << v.second << std::endl;
+					/*if (at::isinf(v.second).any().item<bool>())
+						continue;
+
+					std::cout << "Loss Tensor second: " << v.second << std::endl;
+					std::cout << "Loss name: " << v.first << " val: " << v.second << " device: " << v.second.get_device() << " " << __FILE__ << " " << __LINE__ << std::endl;*/
+					//std::cout << "U name: " << u.first << " U Second: " << u.second << " " << __FILE__ << " " << __LINE__ << std::endl;
 					losses.push_back(u.second * v.second);
 				}
 			}
-
-			torch::Tensor losses_sum;
-			for(int i=0;i<losses.size();i++)
-				losses_sum += losses[i];
-
-			losses_sum.backward();
+			optimizer->zero_grad();
+			if(losses.size() == 1)
+			{
+				std::cout << "Losses: " << losses << std::endl;
+				losses[0].backward();
+			}
+			else if(losses.size() > 1)
+			{
+				for (int i = 0; i < losses.size(); i++)
+					std::cout << "Losses size matrix: " << losses[i].sizes() << std::endl;
+				auto lero = torch::cat(losses);
+				lero = lero.sum();
+				MESSAGE_LOG(lero.sizes())
+				MESSAGE_LOG(lero)
+				//std::cout << "Lero: " << lero << std::endl;
+				lero.backward();
+			}
 			optimizer->step();
-			std::cout << losses_sum.sizes() << std::endl;
-			std::cout << losses_sum << std::endl;
 			std::cout << "Batch Index: " << batch_index << std::endl;
 			batch_index++;
+
+			//torch::cuda::synchronize();
 		}
+		std::cout << "Elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << "ms" << std::endl;
 	}
 	void valnet()
 	{

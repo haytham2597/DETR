@@ -3,7 +3,6 @@
 #ifndef UTILS_LSAP_H
 #define UTILS_LSAP_H
 
-
 #define RECTANGULAR_LSAP_INFEASIBLE -1
 #define RECTANGULAR_LSAP_INVALID -2
 
@@ -46,14 +45,14 @@ namespace linear_sum_assignment {
 
         std::fill(SR.begin(), SR.end(), false);
         std::fill(SC.begin(), SC.end(), false);
-        std::fill(shortestPathCosts.begin(), shortestPathCosts.end(), INFINITY);
+        std::fill(shortestPathCosts.begin(), shortestPathCosts.end(), std::numeric_limits<double>::infinity());
 
         // find shortest augmenting path
         intptr_t sink = -1;
         while (sink == -1) {
 
             intptr_t index = -1;
-            double lowest = INFINITY;
+            double lowest = std::numeric_limits<double>::infinity();
             SR[i] = true;
 
             for (intptr_t it = 0; it < num_remaining; it++) {
@@ -75,8 +74,8 @@ namespace linear_sum_assignment {
             }
 
             minVal = lowest;
-            if (minVal == INFINITY)// infeasible cost matrix
-                return -1;
+            if (minVal == std::numeric_limits<double>::infinity())// infeasible cost matrix
+                return RECTANGULAR_LSAP_INFEASIBLE;
 
             intptr_t j = remaining[index];
             if (row4col[j] == -1) {
@@ -99,6 +98,12 @@ namespace linear_sum_assignment {
         //INFO Assuming "te" is a Tensor rectangular matrix [M,N] OR [N,N]
         int nr = static_cast<int>(te.size(0));
         int nc = static_cast<int>(te.size(1));
+
+        auto tens_col = torch::zeros({ nr }, torch::kInt64);
+        auto tens_row = torch::zeros({ nr }, torch::kInt64);
+        indices = std::make_tuple(tens_row, tens_col);
+
+        std::cout << "NR: " << nr << ", " << "NC: " << nc << std::endl;
         if (nr == 0 || nc == 0)
             return 0;
         const bool transpose = nc < nr;
@@ -122,7 +127,7 @@ namespace linear_sum_assignment {
             for (int i = 0; i < cost.size(); i++) {
                 cost[i] = -cost[i];
                 //test for NaN and -inf entries
-                if (cost[i] == -INFINITY) //prevent re-loop
+                if (cost[i] == -std::numeric_limits<double>::infinity()) //prevent re-loop
                     return RECTANGULAR_LSAP_INVALID;
             }
         }
@@ -169,30 +174,21 @@ namespace linear_sum_assignment {
             }
         }
 
-        /*col = std::vector <int64_t>(nr);
-        row = std::vector<int64_t>(nr);*/
-
-        auto tens_col = torch::zeros({ 1,nr }, torch::kInt64);
-        auto tens_row = torch::zeros({ 1,nr }, torch::kInt64);
         if (transpose) {
             intptr_t i = 0;
             for (auto v : argsort_iter(col4row)) {
-                tens_col[0][i] = col4row[v];
-                tens_row[0][i] = v;
-                /*col[i] = col4row[v];
-                row[i] = v;*/
+                tens_col[i] = col4row[v];
+                tens_row[i] = v;
                 i++;
             }
         }
         else {
             for (intptr_t i = 0; i < nr; i++) {
-                tens_col[0][i] = i;
-                tens_row[0][i] = col4row[i];
-                /*col[i] = i;
-                row[i] = col4row[i];*/
+                tens_col[i] = i;
+                tens_row[i] = col4row[i];
             }
         }
-        indices = std::make_tuple(tens_col, tens_row);
+        indices = std::make_tuple(tens_row, tens_col);
         return 0;
     }
 }

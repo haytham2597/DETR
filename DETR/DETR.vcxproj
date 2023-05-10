@@ -9,6 +9,14 @@
       <Configuration>Debug_Lib1.13.0cu117</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_Lib2.0.0cu117|Win32">
+      <Configuration>Debug_Lib2.0.0cu117</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_Lib2.0.0cu117|x64">
+      <Configuration>Debug_Lib2.0.0cu117</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
@@ -19,6 +27,14 @@
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release_Lib1.13.0cu117|x64">
       <Configuration>Release_Lib1.13.0cu117</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_Lib2.0.0cu117|Win32">
+      <Configuration>Release_Lib2.0.0cu117</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_Lib2.0.0cu117|x64">
+      <Configuration>Release_Lib2.0.0cu117</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -62,7 +78,21 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib2.0.0cu117|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib1.13.0cu117|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib2.0.0cu117|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -89,7 +119,21 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib2.0.0cu117|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib1.13.0cu117|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib2.0.0cu117|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -110,7 +154,13 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib1.13.0cu117|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib2.0.0cu117|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib1.13.0cu117|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib2.0.0cu117|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -122,7 +172,13 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib1.13.0cu117|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib2.0.0cu117|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib1.13.0cu117|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib2.0.0cu117|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -170,7 +226,39 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib2.0.0cu117|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib1.13.0cu117|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib2.0.0cu117|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -234,6 +322,26 @@
       <AdditionalDependencies>opencv_world401.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\caffe2_nvrtc.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\c10.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\c10_cuda.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\kineto.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\torch.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\torch_cpu.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\torch_cuda.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\torch_cuda_cpp.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\lib\torch_cuda_cu.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cublas.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudnn.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cufft.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\curand.lib;C:\Program Files\NVIDIA Corporation\NvToolsExt\lib\x64\nvToolsExt64_1.lib;-INCLUDE:?warp_size@cuda@at@@YAHXZ;-INCLUDE:?_torch_cuda_cu_linker_symbol_op_cuda@native@at@@YA?AVTensor@2@AEBV32@@Z;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lib2.0.0cu117|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>K:\FrameworksForC\opencv\opencv-4.0.1\build\x64\vc15\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_world401.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\caffe2_nvrtc.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\c10.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\c10_cuda.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\kineto.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\torch.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\torch_cpu.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\lib\torch_cuda.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cublas.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudnn.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cufft.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\curand.lib;C:\Program Files\NVIDIA Corporation\NvToolsExt\lib\x64\nvToolsExt64_1.lib;-INCLUDE:?warp_size@cuda@at@@YAHXZ;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib1.13.0cu117|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -244,6 +352,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -254,6 +364,28 @@
       <AdditionalDependencies>opencv_world401d.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\caffe2_nvrtc.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\c10.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\c10_cuda.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\kineto.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\torch.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\torch_cpu.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\torch_cuda.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\torch_cuda_cpp.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\lib\torch_cuda_cu.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cublas.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudnn.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cufft.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\curand.lib;C:\Program Files\NVIDIA Corporation\NvToolsExt\lib\x64\nvToolsExt64_1.lib;-INCLUDE:?warp_size@cuda@at@@YAHXZ;-INCLUDE:?_torch_cuda_cu_linker_symbol_op_cuda@native@at@@YA?AVTensor@2@AEBV32@@Z;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Lib2.0.0cu117|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>K:\FrameworksForC\opencv\opencv-4.0.1\build\x64\vc15\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_world401d.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\caffe2_nvrtc.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\c10.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\c10_cuda.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\kineto.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\torch.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\torch_cpu.lib;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\lib\torch_cuda.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cublas.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudnn.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cufft.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\curand.lib;C:\Program Files\NVIDIA Corporation\NvToolsExt\lib\x64\nvToolsExt64_1.lib;-INCLUDE:?warp_size@cuda@at@@YAHXZ;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -262,21 +394,23 @@
     <ClInclude Include="backbone.h" />
     <ClInclude Include="boxes.h" />
     <ClInclude Include="conditional_detr.h" />
-    <ClInclude Include="conditional_transformer.h" />
     <ClInclude Include="custom_stack.h" />
     <ClInclude Include="dataset.h" />
+    <ClInclude Include="definitions.h" />
     <ClInclude Include="deformable_detr.h" />
     <ClInclude Include="conditional_detr_net.h" />
     <ClInclude Include="deformable_transformer.h" />
     <ClInclude Include="ext.h" />
     <ClInclude Include="hungarian_algorithm.h" />
     <ClInclude Include="hungarian_matcher.h" />
-    <ClInclude Include="intermediate_layer_getter.h" />
+    <ClInclude Include="hungarian_optimize_lsap.h" />
     <ClInclude Include="layers.h" />
     <ClInclude Include="lsap.h" />
+    <ClInclude Include="m_assert.h" />
     <ClInclude Include="nested_tensor.h" />
     <ClInclude Include="position_encoding.h" />
     <ClInclude Include="resnet.h" />
+    <ClInclude Include="solver.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -13,7 +13,8 @@ class dataset_detr : public torch::data::Dataset<dataset_detr, torch::data::Exam
 {
 protected:
 	std::vector<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>> examples_;
-	int siz_data_;
+	int siz_data_ =0;
+	std::mutex* mtx = new std::mutex();
 public:
 	dataset_detr()
 	{
@@ -25,43 +26,50 @@ public:
 			return;
 		for(int i=0;i<static_cast<int>(imgs.size() > 50 ? 50 : imgs.size());i++)
 		{
+			//mtx->lock();
+
 			cv::Mat m = cv::imread(imgs[i]); //TODO: augment size width
 			cv::resize(m, m, cv::Size(800, 800));
 			torch::Tensor img = cv8uc3ToTensor(m, use_fp32);
 			//TODO: the img size should be between 800 and 1333px WIDTH
 			torch::OrderedDict<std::string, torch::Tensor> target;
 
+			//std::cout << labels[i] << std::endl;
 			std::ifstream file(labels[i]);
 			std::string str;
 			std::vector<torch::Tensor> boxes_vec;
-			std::vector<int> classes_vec;
+			std::vector<int64_t> classes_vec;
+			std::vector<double> boxes_vec_double;
 			while(std::getline(file, str))
 			{
 				std::vector<std::string> spl;
 				split_str(str, ' ', spl);
 				int pos = 0;
-				int id= std::stoi(spl[pos]);
+				int id= std::stoi(spl[pos++]);
+
 				double x_c = std::stod(spl[pos++]);
 				double y_c = std::stod(spl[pos++]);
 				double w = std::stod(spl[pos++]);
 				double h = std::stod(spl[pos]);
-				boxes_vec.push_back(torch::from_blob(std::vector<double>({ x_c,y_c,w,h }).data(), { 1,4 }, torch::kFloat32));
+				
+				//std::cout << x_c << ", " << y_c << ", " << w << ", " << h << std::endl;*/
+				boxes_vec.push_back(torch::from_blob(std::vector<double>({ x_c,y_c,w,h }).data(), { 1,4 }, torch::kDouble));
 				classes_vec.push_back(id);
 			}
-			torch::Tensor boxes = torch::cat(boxes_vec);
-			torch::Tensor classes = torch::from_blob(classes_vec.data(), {static_cast<int64_t>(classes_vec.size()), 1});
-
-			target.insert("boxes", boxes);
-			target.insert("labels", classes);
-			target.insert("orig_size", torch::from_blob(std::vector<int>({m.cols, m.rows}).data(), {1,2}, torch::kInt));
-			target.insert("size", torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 1,2 }, torch::kInt)); //this is with augmentation
-
-			this->examples_.push_back({ img, target });
+			
+			target.insert("boxes", torch::cat(boxes_vec).clone());
+			target.insert("labels", torch::from_blob(classes_vec.data(), { static_cast<int64_t>(classes_vec.size()) }, at::kLong).clone());
+			target.insert("orig_size", torch::from_blob(std::vector<int>({m.cols, m.rows}).data(), {2,1}, at::kInt).clone());
+			target.insert("size", torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 2,1 }, at::kInt).clone()); //this is with augmentation
+			this->examples_.emplace_back(img, target);
 			siz_data_++;
 			if (siz_data_ % 50 == 0)
 				std::cout << "Count data: " << examples_.size() << std::endl;
+			file.close();
+			//mtx->unlock();
+			
 		}
-		std::cout << "Total data size: " << examples_.size();
+		std::cout << "Total data size: " << examples_.size() << std::endl;
 	}
 
 	torch::optional<size_t> size()const override {
@@ -71,7 +79,7 @@ public:
 	{
 		return examples_[index];
 	}
-	~dataset_detr()
+	~dataset_detr() override
 	{
 		examples_.clear();
 	}

@@ -5,6 +5,7 @@
 
 #include <torch/torch.h>
 
+#include "attention.h"
 #include "ext.h"
 
 /**
@@ -392,7 +393,7 @@ namespace conditional_detr
 		torch::nn::Dropout2d dropout0{ nullptr }, dropout1{nullptr}, dropout2{nullptr};
 		torch::nn::LayerNorm norm1{ nullptr }, norm2{ nullptr };
 		bool normalize_before_;
-	
+		
 		TransformerEncoderLayerImpl(int d_model, int nhead, int dim_feedforward = 2048, double dropout = 0.1, std::string activation="relu", bool normalize_before = false)
 		{
 			this->normalize_before_ = normalize_before;
@@ -417,6 +418,7 @@ namespace conditional_detr
 			register_module("norm1", norm1);
 			register_module("norm2", norm2);
 		}
+
 		torch::Tensor forward(torch::Tensor src, torch::Tensor src_mask = {}, torch::Tensor src_key_padding_mask = {}, torch::Tensor pos = {})
 		{
 			if(this->normalize_before_)
@@ -430,8 +432,9 @@ namespace conditional_detr
 				src2 = linear2->forward(dropout0->forward(torch::nn::ReLU(torch::nn::ReLUOptions())->forward(linear1->forward(src2))));
 				return src + dropout2->forward(src2);
 			}
-			std::cout << "SRC Size: " << src.sizes() << std::endl;
-			std::cout << "POS Size: " << pos.sizes() << std::endl;
+			/*std::cout << "SRC Size: " << src.sizes() << std::endl;
+			std::cout << "POS Size: " << pos.sizes() << std::endl;*/
+
 			auto q = with_pos_embed(src, pos);
 			auto k = q;
 			auto src2 = std::get<0>(self_attn->forward(q, k, src, src_key_padding_mask, true, src_mask));
@@ -447,7 +450,8 @@ namespace conditional_detr
 
 	struct TransformerDecoderLayerImpl : public torch::nn::Module
 	{
-		torch::nn::MultiheadAttention self_attn{ nullptr }, cross_attn{ nullptr };
+		//torch::nn::MultiheadAttention self_attn{ nullptr }, cross_attn{ nullptr };
+		MultiHeadAttention self_attn{ nullptr }, cross_attn{ nullptr };
 		torch::nn::Linear sa_qcontent_proj{ nullptr }, sa_qpos_proj{ nullptr }, sa_kcontent_proj{ nullptr }, sa_kpos_proj{ nullptr }, sa_v_proj{ nullptr };
 		torch::nn::Linear ca_qcontent_proj{ nullptr }, ca_qpos_proj{ nullptr }, ca_kcontent_proj{ nullptr }, ca_kpos_proj{ nullptr }, ca_v_proj{ nullptr }, ca_qpos_sine_proj{nullptr};
 		torch::nn::Linear linear1{ nullptr }, linear2{ nullptr };
@@ -466,7 +470,9 @@ namespace conditional_detr
 			sa_kcontent_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
 			sa_kpos_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
 			sa_v_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
-			self_attn = torch::nn::MultiheadAttention(torch::nn::MultiheadAttentionOptions(d_model, nhead).dropout(dropout).vdim(d_model));
+			//self_attn = MultiHeadAttention(d_model, nhead, dropout, d_model);
+			self_attn = MultiHeadAttention(d_model, nhead, dropout, true, false, false, -1, d_model);
+			//self_attn = torch::nn::MultiheadAttention(torch::nn::MultiheadAttentionOptions(d_model, nhead).dropout(dropout).vdim(d_model));
 
 			//Decoder Cross-Attention
 			ca_qcontent_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
@@ -475,8 +481,10 @@ namespace conditional_detr
 			ca_kpos_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
 			ca_v_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
 			ca_qpos_sine_proj = torch::nn::Linear(torch::nn::LinearOptions(d_model, d_model));
-			cross_attn = torch::nn::MultiheadAttention(torch::nn::MultiheadAttentionOptions(d_model*2, nhead).dropout(dropout).vdim(d_model));
 
+			//cross_attn = MultiHeadAttention(d_model * 2, nhead, dropout, d_model);
+			cross_attn = MultiHeadAttention(d_model * 2, nhead, dropout, true, false, false, -1, d_model);
+			//cross_attn = torch::nn::MultiheadAttention(torch::nn::MultiheadAttentionOptions(static_cast<int64_t>(d_model*2), nhead).dropout(dropout).vdim(d_model));
 
 			this->normalize_before_ = normalize_before;
 			this->nhead_ = nhead;
@@ -521,6 +529,7 @@ namespace conditional_detr
 			register_module("dropout4", dropout4);
 
 			register_module("activation", activation);
+
 		}
 
 		torch::Tensor forward(torch::Tensor tgt, torch::Tensor memory, torch::Tensor tgt_mask = {}, torch::Tensor memory_mask = {}, torch::Tensor tgt_key_padding_mask = {}, torch::Tensor memory_key_padding_mask = {}, torch::Tensor pos = {}, torch::Tensor query_pos = {}, torch::Tensor query_sine_embed = {}, bool is_first = false)
@@ -540,6 +549,26 @@ namespace conditional_detr
 				tgt = tgt + dropout4->forward(tgt2);
 				return tgt;
 			}
+			/*if (tgt.defined())
+				std::cout << "TGT: " << tgt.sizes() << std::endl;
+			if (memory.defined())
+				std::cout << "memory: " << memory.sizes() << std::endl;
+			if (tgt_mask.defined())
+				std::cout << "tgt_mask: " << tgt_mask.sizes() << std::endl;
+			if (memory_mask.defined())
+				std::cout << "memory_mask: " << memory_mask.sizes() << std::endl;
+			if (tgt_key_padding_mask.defined())
+				std::cout << "tgt_key_padding_mask: " << tgt_key_padding_mask.sizes() << std::endl;
+			if (memory_key_padding_mask.defined())
+				std::cout << "memory_key_padding_mask: " << memory_key_padding_mask.sizes() << std::endl;
+			if (pos.defined())
+				std::cout << "pos: " << pos.sizes() << std::endl;
+			if (query_pos.defined())
+				std::cout << "query_pos: " << query_pos.sizes() << std::endl;
+			if (query_sine_embed.defined())
+				std::cout << "query_sine_embed: " << query_sine_embed.sizes() << std::endl;*/
+
+
 			auto q_content = sa_qcontent_proj->forward(tgt);
 			auto q_pos = sa_qpos_proj->forward(query_pos);
 			auto k_content = sa_kcontent_proj->forward(tgt);
@@ -566,7 +595,7 @@ namespace conditional_detr
 			hw = k_content.size(0);
 
 			k_pos = ca_kpos_proj->forward(pos);
-			if(is_first && !ca_qpos_proj.is_empty())
+			if(is_first)
 			{
 				q_pos = ca_qpos_proj->forward(query_pos);
 				q = q_content + q_pos;
@@ -585,6 +614,17 @@ namespace conditional_detr
 			k_pos = k_pos.view({ hw, bs, nhead_, static_cast<int64_t>(n_model / nhead_) });
 			k = torch::cat({ k, k_pos }, 3).view({ hw, bs, n_model * 2 });
 
+			
+			q = q.to(torch::kCUDA);
+			k = k.to(torch::kCUDA);
+			v = v.to(torch::kCUDA);
+			memory_key_padding_mask = memory_key_padding_mask.to(torch::kCUDA);
+			/*std::cout << "QUERY SHAPE: " << q.get_device() << std::endl;
+			std::cout << "K SHAPE: " << k.get_device() << std::endl;
+			std::cout << "V SHAPE: " << v.get_device() << std::endl;
+			std::cout << "MemoryKey SHAPE: " << memory_key_padding_mask.sizes() << std::endl;*/
+			//std::cout << "MemoryMask SHAPE: " << memory_mask.get_device() << std::endl;
+
 			tgt2 = std::get<0>(cross_attn->forward(q, k, v, memory_key_padding_mask, true, memory_mask));
 
 			tgt = tgt + dropout3->forward(tgt2);
@@ -601,26 +641,33 @@ namespace conditional_detr
 	{
 		torch::nn::LayerNorm norm_{ nullptr };
 		int num_layer_;
-		TransformerEncoderLayer encoder{nullptr};
-		torch::nn::Sequential layers;
-
+		//TransformerEncoderLayerImpl encoder;
+		//torch::nn::Sequential layers;
+		std::vector<TransformerEncoderLayer> layers;
 		TransformerEncoderImpl(TransformerEncoderLayer encoder_layer, int num_layer, torch::nn::LayerNorm norm = nullptr)
 		{
 			if (!norm.is_empty())
 				norm_ = norm;
 			this->num_layer_ = num_layer;
-			encoder = encoder_layer;
-			for (int i = 0; i < num_layer_; i++)
-				layers->push_back(encoder);
-
-			register_module("layers", layers);
+			//encoder = encoder_layer;
+			for (int i = 0; i < num_layer_; i++) {
+				layers.push_back(encoder_layer);
+				register_module("layers"+std::to_string(i), encoder_layer);
+				//layers->push_back(encoder_layer); //Será con TransformerEncoderLayerImpl???
+				//register_module("encoder"+std::to_string(i), encoder);
+			}
+			
 			if(!norm.is_empty())
 				register_module("norm", norm_);
+			
+			//this->to(torch::kCUDA);
 		}
 		torch::Tensor forward(torch::Tensor src, torch::Tensor mask = {}, torch::Tensor src_key_padding_mask = {}, torch::Tensor pos = {})
 		{
 			auto output = src;
-			output = layers->forward(output, mask, src_key_padding_mask, pos);
+			for(int i=0;i<layers.size();i++)
+				output = layers[i]->forward(output, mask, src_key_padding_mask, pos);
+			//output = layers->forward(output, mask, src_key_padding_mask, pos);
 			/*for (int i = 0; i < num_layer_; i++)
 				output = encoder->forward(output, mask, src_key_padding_mask, pos);*/
 			if (!norm_.is_empty())
@@ -637,9 +684,9 @@ namespace conditional_detr
 		bool return_intermediate_;
 		MLP query_scale{ nullptr }, ref_point_head{ nullptr };
 		TransformerDecoderLayer decoder{ nullptr };
-		torch::nn::Sequential layers;
-	
-		TransformerDecoderImpl(TransformerDecoderLayer decoder_layer, int num_layers, torch::nn::LayerNorm norm= nullptr, bool return_intermediate = false, int d_model =256)
+		//torch::nn::Sequential layers;
+		std::vector<TransformerDecoderLayer> layers;
+		TransformerDecoderImpl(TransformerDecoderLayer decoder_layer, int num_layers, torch::nn::LayerNorm norm= nullptr, bool return_intermediate = true, int d_model =256)
 		{
 			this->num_layers_ = num_layers;
 			if (!norm.is_empty())
@@ -651,13 +698,19 @@ namespace conditional_detr
 
 			register_module("query_scale", query_scale);
 			register_module("ref_point_head", ref_point_head);
-			register_module("norm", norm_);
-			decoder_layer->unregister_module("ca_qpos_proj");
-			decoder = decoder_layer;
-			for(int i=0;i<num_layers_;i++)
-				layers->push_back(decoder);
-
-			register_module("layers", layers);
+			if (!norm.is_empty()) {
+				register_module("norm", norm_);
+				norm_->to(torch::kCUDA);
+			}
+			for (int i = 0; i < num_layers_; i++) {
+				layers.push_back(decoder_layer);
+				register_module("layers" + std::to_string(i), decoder_layer);
+			}
+			//decoder_layer->unregister_module("ca_qpos_proj");
+			//decoder = decoder_layer;
+			//for(int i=0;i<num_layers_;i++)
+				//layers->push_back(decoder);
+			//register_module("layers", layers);
 			//decoder_layer->ca_qpos_proj.
 		}
 		torch::Tensor gen_sinembed_for_position(torch::Tensor pos_tensor)
@@ -693,7 +746,8 @@ namespace conditional_detr
 				{
 					query_sine_embed = query_sine_embed * query_scale->forward(output);
 				}
-				output = this->decoder->forward(output, memory, tgt_mask, memory_mask, tgt_key_padding_mask, memory_key_padding_mask, pos, query_pos, query_sine_embed, i == 0);
+				
+				output = this->layers[i]->forward(output, memory, tgt_mask, memory_mask, tgt_key_padding_mask, memory_key_padding_mask, pos, query_pos, query_sine_embed, i == 0);
 				if (return_intermediate_)
 					intermediates.push_back(norm_->forward(output));
 			}
@@ -729,15 +783,17 @@ namespace conditional_detr
 		TransformerEncoder encoder{ nullptr };
 		TransformerDecoder decoder{ nullptr };
 		int d_model_, nhead_, dec_layers_;
-		TransformerImpl(int d_model= 512, int nhead = 8, int num_queries = 300, int num_encoder_layers = 6, int num_decoder_layers = 6, int dim_feedforward = 2048, double dropout = 0.1, std::string activation = "relu", bool normalize_before = false, bool return_intermediate_dec = false)
+		TransformerImpl(int d_model= 512, int nhead = 8, int num_queries = 300, int num_encoder_layers = 6, int num_decoder_layers = 6, int dim_feedforward = 2048, double dropout = 0.1, std::string activation = "relu", bool normalize_before = false, bool return_intermediate_dec = true)
 		{
+			//auto transform_encoder = TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, activation, normalize_before);
+			//transform_encoder->to(torch::kCUDA);
 			encoder = TransformerEncoder(TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, activation, normalize_before), num_encoder_layers, normalize_before ? torch::nn::LayerNorm(torch::nn::LayerNormOptions({ d_model })) : torch::nn::LayerNorm(nullptr));
 			decoder = TransformerDecoder(TransformerDecoderLayer(d_model, nhead, dim_feedforward, dropout, normalize_before), num_decoder_layers, torch::nn::LayerNorm(torch::nn::LayerNormOptions({ d_model })), return_intermediate_dec, d_model);
-			/*register_module("encoder", encoder);
-			register_module("decoder", decoder);*/
+			register_module("TransformEncoderTransformer", encoder);
+			register_module("TransformDecoderTransformer", decoder);
 			reset_parameters();
 			d_model_ = d_model;
-			nhead_ = nhead;
+			nhead_ = nhead; 
 			dec_layers_ = num_decoder_layers;
 			encoder->to(torch::kCUDA);
 			decoder->to(torch::kCUDA);
@@ -754,8 +810,8 @@ namespace conditional_detr
 			pos_embed = pos_embed.flatten(2).permute({ 2,0,1 });
 			query_embed = query_embed.unsqueeze(1).repeat({ 1,bs,1 });
 			mask = mask.flatten(1);
-			auto tgt = torch::zeros_like(query_embed);
-			auto memory = encoder->forward(src, {}, mask, pos_embed);
+			auto tgt = torch::zeros_like(query_embed).to(src.device());
+			auto memory = encoder->forward(src, {}, mask, pos_embed).to(src.device());
 			return decoder->forward(tgt, memory, {}, {}, {}, mask, pos_embed, query_embed);
 		}
 	};

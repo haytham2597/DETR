@@ -5,6 +5,8 @@
 
 #include <torch/torch.h>
 
+#include <utility>
+
 #include "backbone.h"
 #include "hungarian_matcher.h"
 #include "layers.h"
@@ -13,7 +15,8 @@
 class ConditionalDETR : public torch::nn::Module
 {
 private:
-	conditional_detr::Transformer transformer_;
+	conditional_detr::Transformer* transformer_ = nullptr;
+	PositionEmbeddingSine position_encoding_;
 	Joiner joiner_ = Joiner();
 	//Backbone backbone_;
 	int num_queries_, hidden_dim_;
@@ -27,18 +30,22 @@ public:
 	{
 		
 	}
-	ConditionalDETR(Backbone backbone, conditional_detr::Transformer transformer, int num_classes, int num_queries, bool aux_loss = false)
+	ConditionalDETR(Backbone backbone, conditional_detr::Transformer* transformer, int num_classes, int num_queries, bool aux_loss = false)
 	{
 		//backbone_ = backbone;
 		transformer_ = transformer;
-		hidden_dim_ = transformer_->d_model_;
+		hidden_dim_ = transformer_->get()->d_model_;
+		position_encoding_ = PositionEmbeddingSine(static_cast<int>(hidden_dim_ / 2));
 		//encoding_ = static_cast<PositionEncoding>(PositionEmbeddingSine(static_cast<int>(hidden_dim_ / 2)));
 		num_queries_ = num_queries;
-		joiner_ = Joiner(backbone, static_cast<PositionEncoding>(PositionEmbeddingLearned(static_cast<int>(hidden_dim_ / 2))));
+
+		//std::cout << "Hidden_Dim: " << hidden_dim_ << std::endl;
+
+		joiner_ = Joiner(backbone, position_encoding_);
 		class_embed = torch::nn::Linear(torch::nn::LinearOptions(hidden_dim_, num_classes));
 		bbox_embed = MLP(hidden_dim_, hidden_dim_, 4, 3);
 		query_embed = torch::nn::Embedding(torch::nn::EmbeddingOptions(num_queries, hidden_dim_));
-		input_proj = torch::nn::Conv2d(torch::nn::Conv2dOptions(backbone.num_channels[0], hidden_dim_, {1,1}));
+		input_proj = torch::nn::Conv2d(torch::nn::Conv2dOptions(backbone.num_channels, hidden_dim_, {1,1}));
 
 
 		double prior_prob = 0.01;
@@ -56,12 +63,12 @@ public:
 		register_module("input_proj", input_proj);
 
 		//joiner_(torch::kCUDA);
-		transformer_->to(torch::kCUDA);
+		transformer_->get()->to(torch::kCUDA);
 		//encoding_.to(torch::kCUDA);
 	}
 	torch::OrderedDict<std::string, torch::Tensor> forward(NestedTensor samples)
 	{
-		std::cout << "sample tensor size (Supossed to be [bs, 3, H, W]): " << samples.tensors_.sizes() << std::endl;
+		//std::cout << "sample tensor size (Supossed to be [bs, 3, H, W]): " << samples.tensors_.sizes() << std::endl;
 		auto features_pos = joiner_.forward(samples);
 		auto features = std::get<0>(features_pos);
 		auto pos = std::get<1>(features_pos);
@@ -73,9 +80,8 @@ public:
 			//should throw exception???
 		}
 		auto src = features.tensors_;
-		
 		auto mask = features.masks_;
-		auto tuple_transformer = transformer_->forward(input_proj->forward(src), mask, query_embed->weight, pos);
+		auto tuple_transformer = transformer_->get()->forward(input_proj->forward(src), mask, query_embed->weight, pos);
 		auto hs = std::get<0>(tuple_transformer);
 		auto reference = std::get<1>(tuple_transformer);
 		auto reference_before_sigmoid = inverse_sigmoid(reference);
@@ -90,8 +96,8 @@ public:
 		auto outputs_coords = torch::stack(output_coords_vec);
 		auto output_class = class_embed->forward(hs);
 		torch::OrderedDict<std::string, torch::Tensor> outputs;
-		outputs.insert("pred_logits", output_class[-1]);
-		outputs.insert("pred_boxes", outputs_coords[-1]);
+		outputs.insert("pred_logits", output_class.index({-1}));
+		outputs.insert("pred_boxes", outputs_coords.index({-1}));
 		return outputs;
 	}
 };
@@ -113,16 +119,20 @@ private:
 	 */
 	std::tuple<torch::Tensor, torch::Tensor> get_permutation_idx(std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, bool src = true)
 	{
-		
 		std::vector<torch::Tensor> batch_idx;
 		std::vector<torch::Tensor> src_idx;
-		for (int i = 0; i < indices.size(); i++)
+		for (int64_t i = 0; i < static_cast<int64_t>(indices.size()); i++)
 		{
+			/*std::cout << "Indices[" << std::to_string(i) << "][0]: " << std::get<0>(indices[i]).sizes() << " dev: " << std::get<0>(indices[i]).get_device() << std::endl;
+			std::cout << "Indices[" << std::to_string(i) << "][1]: " << std::get<1>(indices[i]).sizes() << " dev: " << std::get<1>(indices[i]).get_device() << std::endl;*/
 			batch_idx.push_back(src ? torch::full_like(std::get<0>(indices[i]), i) : torch::full_like(std::get<1>(indices[i]), i));
 			src_idx.push_back(src ? std::get<0>(indices[i]) : std::get<1>(indices[i]));
 		}
-		std::make_tuple(torch::cat(batch_idx), torch::cat(src_idx));
+		auto bs_idx = torch::cat( batch_idx);
+		auto catsrc_idx = torch::cat(src_idx);
+		return std::make_tuple(bs_idx,catsrc_idx);
 	}
+
 	/*std::tuple<torch::Tensor, torch::Tensor> get_src_permutation_idx(std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices)
 	{
 		std::vector<torch::Tensor> batch_idx;
@@ -148,8 +158,11 @@ private:
 	std::unordered_map<std::string, torch::Tensor> losses_;
 public:
 	std::unordered_map<std::string, float> weight_dict_;
-	SetCriterion(){}
-	SetCriterion(int num_class, float focal_alpha = 0.25)
+	SetCriterion()
+	{
+		this->register_module("HungarianMatcher", matcher_);
+	}
+	SetCriterion(int num_class, float focal_alpha = 0.25) : SetCriterion()
 	{
 		this->num_class_ = num_class;
 		//std::unordered_map<std::string, float> weight_dict
@@ -169,17 +182,22 @@ public:
 		auto src_logits = output["pred_logits"];
 
 		std::vector<torch::Tensor> tgt_classes_o_vec;
-		for (int i = 0; i < indices.size(); i++)
+		for (uint64_t i = 0; i < indices.size(); i++)
 			tgt_classes_o_vec.push_back(targets[i]["labels"].index({std::get<1>(indices[i])}));
 		auto target_classes_o = torch::cat(tgt_classes_o_vec);
-		auto target_classes = torch::full(src_logits.index({ torch::indexing::Slice(torch::indexing::None, 2) }).sizes(), num_class_, torch::TensorOptions(torch::kInt64).device(src_logits.device()));
-		target_classes = target_classes.index_put({ std::get<0>(idx), std::get<1>(idx) }, target_classes_o);
+		auto target_classes = torch::full({src_logits.size(0), src_logits.size(1)}, num_class_, torch::TensorOptions(torch::kInt64).device(src_logits.device()));
+		MESSAGE_LOG_ObJ("TargetClasses_o Size: ", target_classes_o.sizes())
+		MESSAGE_LOG_ObJ("TargetClasses Size: ", target_classes.sizes())
+		
+		target_classes.index_put({ std::get<0>(idx), std::get<1>(idx) }, target_classes_o);
+		//target_classes = target_classes.index_put({ std::get<0>(idx), std::get<1>(idx) }, target_classes_o);
 
 		auto target_classes_onehot = torch::zeros({ src_logits.size(0), src_logits.size(1), src_logits.size(2) + 1 }, torch::TensorOptions(src_logits.dtype()).layout(src_logits.layout()).device(src_logits.device()));
 		target_classes_onehot = target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1);
 		target_classes_onehot = target_classes_onehot.index({ sli(),sli(),sli(non, -1) });
 		auto loss_ce = sigmoid_focal_loss(src_logits, target_classes_onehot, num_boxes, focal_alpha_, 2) * src_logits.size(1);
 		this->losses_["loss_ce"] = loss_ce;
+		this->losses_["class_error"] = 100 - accuracy(src_logits.index({ std::get<0>(idx), std::get<1>(idx) }), target_classes_o)[0];
 	}
 	torch::OrderedDict<std::string, torch::Tensor> loss_cardinality(torch::OrderedDict<std::string, torch::Tensor> output, std::vector<torch::OrderedDict<std::string, torch::Tensor>> targets, std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, torch::Scalar num_boxes)
 	{
@@ -188,13 +206,24 @@ public:
 	}
 	void loss_boxes(torch::OrderedDict<std::string, torch::Tensor> output, std::vector<torch::OrderedDict<std::string, torch::Tensor>> targets, std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, torch::Scalar num_boxes)
 	{
-		torch::OrderedDict<std::string, torch::Tensor> losses;
+		//torch::OrderedDict<std::string, torch::Tensor> losses;
 		auto idx = get_permutation_idx(indices);
-		auto src_boxes = output["pred_boxes"].index({ std::get<0>(idx), std::get<1>(idx) });
+		//std::cout << "IDX Device: " << std::get<0>(idx).get_device() << ", " << std::get<1>(idx).get_device() << " " << __FILE__ << " " << __LINE__ << std::endl;
+ 		//auto src_boxes = output["pred_boxes"].detach().to(torch::kCPU).index({ std::get<0>(idx), std::get<1>(idx) });
+		auto src_boxes = output["pred_boxes"].index({ std::get<0>(idx), std::get<1>(idx) }).cpu();
 		std::vector<torch::Tensor> tgt_boxes_vec;
-		for (int i = 0; i < indices.size(); i++)
-			tgt_boxes_vec.push_back(targets[i]["boxes"].index({ std::get<1>(indices[i]) }));
+		for (uint64_t i = 0; i < indices.size(); i++) {
+			const auto squez = std::get<1>(indices[i]);
+
+			std::cout << "Squeeze size: " << squez.sizes() << "dtype: " << squez.dtype().name() << "Device : " << squez.get_device() << std::endl;
+			std::cout << "TargetsBoxes: " << targets[i]["boxes"].sizes() << " device: " << targets[i]["boxes"].get_device() << std::endl;
+
+			tgt_boxes_vec.push_back(targets[i]["boxes"].index({ squez }));
+		}
+		std::cout << "Size [0]: " << tgt_boxes_vec[0].sizes() << std::endl;
 		auto target_boxes = torch::cat(tgt_boxes_vec);
+		std::cout << "src_boxes size: " << src_boxes.sizes() << "dtype: " << src_boxes.dtype().name() << "Device : " << src_boxes.get_device() << std::endl;
+		std::cout << "TargetsBoxes cat: " << target_boxes.sizes()  << " dtype: " << target_boxes.dtype().name() << " device: " << target_boxes.get_device() << std::endl;
 		auto loss_bbox = torch::nn::functional::l1_loss(src_boxes, target_boxes, torch::nn::functional::L1LossFuncOptions(torch::enumtype::kNone()));
 		auto loss_giou = 1 - torch::diag(generalized_box_iou(box_cxcywh_to_xyxy(src_boxes), box_cxcywh_to_xyxy(target_boxes)));
 		
@@ -213,18 +242,44 @@ public:
 		std::vector<torch::Tensor> auxs;
 		torch::OrderedDict<std::string, torch::Tensor> outputs_without_aux; //because aux is segmentation
 		for (auto v : outputs)
-			if (v.key() != "aux_outputs" || v.key() != "enc_encoder")
+			if (v.key() != "aux_outputs")
 				outputs_without_aux.insert(v.key(), v.value());
 
 		auto indices = matcher_->forward(outputs_without_aux, targets);
+		/*if (indices.size() == 0)
+			return this->losses_;*/
 		int64_t num_boxes = 0;
-		for(int64_t i=0;i<static_cast<int64_t>(targets.size());i++)
+		for(uint64_t i=0;i<targets.size();i++)
 			num_boxes += targets[i]["labels"].size(0);
-		auto num_box = torch::from_blob(std::vector<int64_t>({ num_boxes }).data(), { 1 }, torch::kFloat);
-		num_boxes = torch::clamp(num_box, 1).item<int64_t>();
 
-		loss_boxes(outputs, targets, indices, num_boxes);
-		loss_labels(outputs, targets, indices, num_boxes);
+		MESSAGE_LOG("Num boxes: " + std::to_string(num_boxes))
+		auto num_box = torch::from_blob(std::vector<int64_t>({ num_boxes }).data(), { 1 }, torch::kFloat);
+		auto num_box_scalar = torch::clamp(num_box, 1).item();
+		/*
+		std::cout << "_-----------_ START COND" << std::endl;
+		for(auto d : outputs)
+		{
+			std::cout << "Outputs ["<< d.key() << "]: " << d.value() << std::endl;
+		}
+		for(int i=0;i<targets.size();i++)
+		{
+			for (auto d : targets[i])
+			{
+				std::cout << "Targets [" << d.key() << "]: " << d.value() << std::endl;
+			}
+		}
+		for(int i=0;i<indices.size();i++)
+		{
+			std::cout << "Indices[0]: " << std::get<0>(indices[i]) << std::endl;
+			std::cout << "Indices[1]: " << std::get<1>(indices[i]) << std::endl;
+		}
+		//std::cout << "Indices: " << indices << std::endl;
+		std::cout << "numbox_scalar: " << num_box_scalar << std::endl;
+		std::cout << "_-----------_ END COND" << std::endl;*/
+		//loss_labels(outputs, targets, indices, num_box_scalar);
+		loss_boxes(outputs, targets, indices, num_box_scalar);
+		/*outputs.clear();
+		targets.clear();*/
 		return this->losses_;
 	}
 };
