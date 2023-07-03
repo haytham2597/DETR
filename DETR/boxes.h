@@ -101,9 +101,9 @@ std::tuple<torch::Tensor, torch::Tensor> box_inter_union(torch::Tensor boxes1, t
 torch::Tensor generalized_box_iou(torch::Tensor boxes1, torch::Tensor boxes2)
 {
 	auto tup = box_inter_union(boxes1, boxes2);
-	auto iou = std::get<0>(tup) / std::get<1>(tup);
-	auto lt = torch::max(boxes1.index({ torch::indexing::Slice(), torch::indexing::None, torch::indexing::Slice(torch::indexing::None, 2) }), boxes2.index({ torch::indexing::Slice(), torch::indexing::Slice(torch::indexing::None, 2) }));
-	auto rb = torch::min(boxes1.index({ torch::indexing::Slice(), torch::indexing::None, torch::indexing::Slice(2,torch::indexing::None) }), boxes2.index({ torch::indexing::Slice(), torch::indexing::Slice(2,torch::indexing::None) }));
+	//auto iou = std::get<0>(tup) / std::get<1>(tup);
+	auto lt = torch::min(boxes1.index({ torch::indexing::Slice(), torch::indexing::None, torch::indexing::Slice(torch::indexing::None, 2) }), boxes2.index({ torch::indexing::Slice(), torch::indexing::Slice(torch::indexing::None, 2) }));
+	auto rb = torch::max(boxes1.index({ torch::indexing::Slice(), torch::indexing::None, torch::indexing::Slice(2,torch::indexing::None) }), boxes2.index({ torch::indexing::Slice(), torch::indexing::Slice(2,torch::indexing::None) }));
 	
 	auto wh = upcast(rb - lt).clamp(0); //debería poner _upcast para prevenir overflow test_box 81
 	auto area = wh.index({ torch::indexing::Slice(),torch::indexing::Slice() , 0 }) * wh.index({ torch::indexing::Slice(),torch::indexing::Slice() , 1 });

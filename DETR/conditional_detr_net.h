@@ -8,6 +8,9 @@
 #include "custom_stack.h"
 #include "dataset.h"
 #include "cmath"
+#include <cuda.h>
+#include <torch/cuda.h>
+#include <cuda_runtime.h>
 
 typedef struct _configs {
 	double lr;
@@ -32,7 +35,7 @@ class conditional_detrnet
 private:
 	
 	torch::Device device;
-	dataset_detr* dataset_train_ =new dataset_detr();
+	dataset_detr dataset_train_ = dataset_detr();
 	//dataset_detr dataset_val = dataset_detr();
 	Backbone backbone_ = Backbone();
 	ConditionalDETR conditional_detr_;
@@ -67,6 +70,11 @@ public:
 
 		build_module();
 
+		/*if(torch::cuda::is_available())
+		{
+			torch::cuda::synchronize();
+			c10::cuda::CUDACachingAllocator::emptyCache();
+		}*/
 	}
 	void build_module()
 	{
@@ -102,7 +110,6 @@ public:
 			conditional_detr_.train();
 			criterion.train();
 			//train epoch
-
 			trainnet();
 			valnet();
 
@@ -112,35 +119,44 @@ public:
 	void trainnet()
 	{
 		MESSAGE_LOG("Trainnet")
-		conditional_detr_.train();
-		criterion.train();
+		
 		//torch::NoGradGuard noGrad;
 		std::vector<std::string> images;
 		cv::glob("D://Datasets//TZ_Contenedores_Chasis//ContainerGeneratorv10//images//train", images);
 		std::vector<std::string> labels;
 		cv::glob("D://Datasets//TZ_Contenedores_Chasis//ContainerGeneratorv10//labels//train", labels);
-		dataset_train_->add_data(images, labels);
+		dataset_train_.add_data(images, labels);
 
 		if(dataloader == nullptr)
 		{
-			auto transf = dataset_train_->map(CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>());
+			auto transf = dataset_train_.map(CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>());
 			dataloader = torch::data::make_data_loader<torch::data::samplers::SequentialSampler>(std::move(transf), params.trainBatchSize);
 		}
-		const auto start = std::chrono::high_resolution_clock::now();
+		//std::cout << "PRUEBA: " << dataset_train_->get(0).target["labels"] << std::endl;
+ 		const auto start = std::chrono::high_resolution_clock::now();
 		int batch_index = 0;
-
+		conditional_detr_.train();
+		criterion.train();
 		for (auto& batch : *dataloader)
 		{
-			auto da = batch.data.to(this->device);
+			MESSAGE_LOG("Batch")
+			auto nested = NestedTensor(batch.data);
+			nested.to(this->device);
+			MESSAGE_LOG("NestedTensor")
+			//auto da = batch.data.to(this->device);
+			
 			for (uint64_t i = 0; i < batch.target.size(); i++) {
 				for (auto& n : batch.target[i]) {
-					n.value().to(this->device);
+					
+					//n.value().to(this->device);
 					//MESSAGE_LOG("BatchTarget Name and Device: " + n.key() + ", " + std::to_string(n.value().get_device()))
-					//std::cout << "BatchTarget: ["<< n.key()<< "]" << n.value() << std::endl;
+					if (n.key() == "labels") {
+						std::cout << "BatchTarget: [" << n.key() << "]" << n.value() << std::endl;
+					}
 				}
 			}
 			//std::cout << "Size da.size(): " << da.sizes() << std::endl;
-			auto sample = conditional_detr_.forward(NestedTensor(da));
+			auto sample = conditional_detr_.forward(nested);
 			auto loss = criterion.forward(sample, batch.target);
 			
 			
@@ -148,12 +164,6 @@ public:
 			for (const auto& v : loss)
 			for (const auto& u : criterion.weight_dict_) {
 				if (u.first == v.first) {
-					/*if (at::isinf(v.second).any().item<bool>())
-						continue;
-
-					std::cout << "Loss Tensor second: " << v.second << std::endl;
-					std::cout << "Loss name: " << v.first << " val: " << v.second << " device: " << v.second.get_device() << " " << __FILE__ << " " << __LINE__ << std::endl;*/
-					//std::cout << "U name: " << u.first << " U Second: " << u.second << " " << __FILE__ << " " << __LINE__ << std::endl;
 					losses.push_back(u.second * v.second);
 				}
 			}

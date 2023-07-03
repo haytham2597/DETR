@@ -98,5 +98,17 @@
     <ClInclude Include="hungarian_optimize_lsap.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
+    <ClInclude Include="munkres.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="hungarianoper.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
+    <ClInclude Include="datatype.h">
+      <Filter>Header Files\libs</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

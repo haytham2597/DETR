@@ -18,7 +18,8 @@ std::vector<torch::Tensor> unravel_index(torch::Tensor indices, const at::IntArr
 	for (int64_t i = shape.size(); i --> 0;) //reverse
 	{
 		coord.push_back(indices % shape[i]);
-		indices = indices / shape[i];
+		//indices = indices / shape[i];
+		indices = indices.div(shape[i], "floor");
 	}
 	std::reverse(coord.begin(), coord.end());
 	return coord;
@@ -106,15 +107,16 @@ inline void split_str(std::string const& str, const char delim, std::vector<std:
 }
 inline torch::Tensor cv8uc3ToTensor(cv::Mat frame, bool use_fp32 = true)
 {
-#ifndef _DEBUG
+/*#ifndef _DEBUG
 	frame.convertTo(frame, use_fp32 ? CV_32FC(frame.channels()) : CV_16FC(frame.channels()));
 #else
 	frame.convertTo(frame, use_fp32 ? CV_32FC(frame.channels()) : CV_16FC(frame.channels()));
 	//frame.convertTo(frame, CV_32FC3);
-#endif
-
+#endif*/
+	frame.convertTo(frame, use_fp32 ? CV_32FC(frame.channels()) : CV_16FC(frame.channels()));
 	auto input_tensor = torch::from_blob(frame.data, { frame.rows, frame.cols, frame.channels() }, use_fp32 ? at::kFloat : at::kHalf);
-	input_tensor = input_tensor.permute({ 2, 1, 0 }).div(255);
+	input_tensor = input_tensor.permute({ 2, 1, 0 });
+	input_tensor = input_tensor.div(255);
 	return input_tensor;
 }
 #endif

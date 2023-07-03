@@ -4,7 +4,8 @@
 #define LIBS_HUNGARIAN_MATCHER
 
 #include <torch/torch.h>
-#include "hungarian_algorithm.h"
+#include "hungarian_optimize_lsap.h"
+//#include "hungarian_algorithm.h"
 #include "boxes.h"
 #include "lsap.h"
 
@@ -13,7 +14,8 @@ using namespace torch::indexing;
 struct HungarianMatcherImpl : public torch::nn::Module
 {
 	double cost_class_, cost_bbox_, cost_giou_;
-	HungarianAlgorithm hungarian_ = HungarianAlgorithm();
+	LinearSumAssignment linearSum = LinearSumAssignment();
+	//HungarianAlgorithm hungarian_ = HungarianAlgorithm();
 	HungarianMatcherImpl(double cost_class = 1, double cost_bbox = 1, double cost_giou = 1)
 	{
 		this->cost_class_ = cost_class;
@@ -78,6 +80,8 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		
 		auto tgt_ids = torch::cat(tgt_ids_vec);
 		auto tgt_bbox = torch::cat(tgt_bbox_vec);
+		//MESSAGE_LOG_ObJ("TGTIDS:", tgt_ids)
+		
 		float alpha = 0.25;
 		float gamma = 2.0;
 
@@ -92,15 +96,16 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		std::cout << "tgt_bbox size: " << tgt_bbox.sizes() << " device: " << tgt_bbox.get_device() << " dtype: " << tgt_bbox.dtype().name() << std::endl;*/
 		auto cost_bbox = torch::cdist(out_bbox, tgt_bbox, 1);
 		auto cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox));
-		cost_class = cost_class.to(cost_bbox.device()).to(cost_bbox.dtype());
-		cost_giou = cost_giou.to(cost_bbox.device()).to(cost_bbox.dtype());
+		cost_class = cost_class.to(cost_bbox.device());
+		cost_giou = cost_giou.to(cost_bbox.device());
 		/*std::cout << "cost bbox size: " << cost_bbox.sizes() << " device : " << cost_bbox.get_device() << " dtype : " << cost_bbox.dtype().name() << std::endl;
 		std::cout << "cost class size: " << cost_class.sizes() << " device : " << cost_class.get_device() << " dtype : " << cost_class.dtype().name() << std::endl;
 		std::cout << "cost giou size: " << cost_giou.sizes() << " device : " << cost_giou.get_device() << " dtype : " << cost_giou.dtype().name() << std::endl;*/
 		//auto dl = (this->cost_bbox_ * cost_bbox) + (this->cost_class_ * cost_class);
 		auto c = (this->cost_bbox_ * cost_bbox) + (this->cost_class_ * cost_class) + (this->cost_giou_ * cost_giou);
 		//c = c.view({ bs, num_queries, -1 }).cpu();
-		c = c.view({ bs, num_queries, -1 }).to(torch::kCPU);
+		//c = c.view({ bs, num_queries, -1 }).to(torch::kCPU);
+		c = c.reshape({ bs, num_queries, -1 }).to(torch::kCPU);
 
 		std::vector<int64_t> sizes;
 		for (int i = 0; i < static_cast<int64_t>(targets.size()); i++)
@@ -112,8 +117,11 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		std::vector<std::tuple<torch::Tensor, torch::Tensor>> ij;
 		for(int i =0;i<static_cast<int64_t>(vec_tensor.size());i++)
 		{
-			//std::cout << "TensorSize split: " << vec_tensor[i].sizes() << " " << __FILE__ << " " << __LINE__ << std::endl;
+			/*std::cout << "VecTensor: " << vec_tensor[i][i] << std::endl;
+			ij.push_back(linearSum.Solve(vec_tensor[i][i], false));*/
+			std::cout << "TensorSize split: " << vec_tensor[i].sizes() << " " << __FILE__ << " " << __LINE__ << std::endl;
 			std::tuple<torch::Tensor, torch::Tensor> v_tuple;
+
 			int solve = linear_sum_assignment::solve(vec_tensor[i][i], false, v_tuple);
 			std::cout << "Solve result: " << solve << std::endl;
 			ij.push_back(v_tuple);

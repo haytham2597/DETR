@@ -12,9 +12,10 @@
 class dataset_detr : public torch::data::Dataset<dataset_detr, torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>
 {
 protected:
+	//std::vector<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>> examples_;
 	std::vector<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>> examples_;
 	int siz_data_ =0;
-	std::mutex* mtx = new std::mutex();
+	//std::mutex* mtx = new std::mutex();
 public:
 	dataset_detr()
 	{
@@ -26,62 +27,75 @@ public:
 			return;
 		for(int i=0;i<static_cast<int>(imgs.size() > 50 ? 50 : imgs.size());i++)
 		{
-			//mtx->lock();
-
+			torch::OrderedDict<std::string, torch::Tensor> target;
 			cv::Mat m = cv::imread(imgs[i]); //TODO: augment size width
+			//target["orig_size"] = torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 2,1 }, at::kInt).clone();
+			target.insert("orig_size", torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 2,1 }, at::kInt).clone());
+			const cv::Size2d original = cv::Size2d(m.cols, m.rows);
 			cv::resize(m, m, cv::Size(800, 800));
+			const cv::Size2d res = cv::Size2d(m.cols, m.rows);
 			torch::Tensor img = cv8uc3ToTensor(m, use_fp32);
 			//TODO: the img size should be between 800 and 1333px WIDTH
-			torch::OrderedDict<std::string, torch::Tensor> target;
-
-			//std::cout << labels[i] << std::endl;
 			std::ifstream file(labels[i]);
 			std::string str;
 			std::vector<torch::Tensor> boxes_vec;
-			std::vector<int64_t> classes_vec;
-			std::vector<double> boxes_vec_double;
+			std::vector<double> boxescomple;
+			std::vector<int> classes_vec;
+			int count = 0;
 			while(std::getline(file, str))
 			{
 				std::vector<std::string> spl;
 				split_str(str, ' ', spl);
-				int pos = 0;
-				int id= std::stoi(spl[pos++]);
-
-				double x_c = std::stod(spl[pos++]);
-				double y_c = std::stod(spl[pos++]);
-				double w = std::stod(spl[pos++]);
-				double h = std::stod(spl[pos]);
-				
-				//std::cout << x_c << ", " << y_c << ", " << w << ", " << h << std::endl;*/
-				boxes_vec.push_back(torch::from_blob(std::vector<double>({ x_c,y_c,w,h }).data(), { 1,4 }, torch::kDouble));
+				int pos = 0; 
+				int id = std::stoi(spl[pos++]);
+				double x_c =  std::stod(spl[pos++])* static_cast<double>(res.width) / static_cast<double>(original.width);
+				double y_c = std::stod(spl[pos++])* static_cast<double>(res.height) / static_cast<double>(original.height);
+				double w = std::stod(spl[pos++])* static_cast<double>(res.width) / static_cast<double>(original.width);
+				double h = std::stod(spl[pos++])* static_cast<double>(res.height) / static_cast<double>(original.height);
+				boxescomple.push_back(x_c);
+				boxescomple.push_back(y_c);
+				boxescomple.push_back(w);
+				boxescomple.push_back(h);
+				/*auto boxe = torch::from_blob(std::vector<double>({ x_c,y_c,w,h }).data(), { 1,4 }, torch::kFloat64);
+				boxes_vec.push_back(boxe);*/
 				classes_vec.push_back(id);
+				count++;
 			}
+			auto label = torch::from_blob(classes_vec.data(), { static_cast<int64_t>(classes_vec.size()) }, torch::kInt);
+			auto size = torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 2,1 }, torch::kInt).clone();
+			auto boxesco = torch::from_blob(boxescomple.data(), { count, 4 }, torch::kFloat64).clone();
 			
-			target.insert("boxes", torch::cat(boxes_vec).clone());
-			target.insert("labels", torch::from_blob(classes_vec.data(), { static_cast<int64_t>(classes_vec.size()) }, at::kLong).clone());
-			target.insert("orig_size", torch::from_blob(std::vector<int>({m.cols, m.rows}).data(), {2,1}, at::kInt).clone());
-			target.insert("size", torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 2,1 }, at::kInt).clone()); //this is with augmentation
-			this->examples_.emplace_back(img, target);
+			//target.insert("boxes", boxesco);
+			target.insert("boxes", boxesco);
+			target.insert("labels", label.clone());
+			target.insert("size", size);
+			this->examples_.push_back({ std::move(img.clone()), std::move(target) });
+
+			//std::cout << "Get labels: " << this->examples_[this->examples_.size()-1].target["labels"] << std::endl;
+			//this->examples_.emplace_back(img, target);
 			siz_data_++;
 			if (siz_data_ % 50 == 0)
 				std::cout << "Count data: " << examples_.size() << std::endl;
 			file.close();
-			//mtx->unlock();
-			
+			boxes_vec.clear();
+			classes_vec.clear();
+			target.clear();
 		}
 		std::cout << "Total data size: " << examples_.size() << std::endl;
 	}
 
 	torch::optional<size_t> size()const override {
+		std::cout << "Size dataset: " << examples_.size();
 		return examples_.size();
 	}
 	ExampleType get(size_t index) override
 	{
 		return examples_[index];
 	}
-	~dataset_detr() override
+
+	/*~dataset_detr() override
 	{
 		examples_.clear();
-	}
+	}*/
 };
 #endif

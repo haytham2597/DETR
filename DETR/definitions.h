@@ -7,7 +7,7 @@
 #include <iostream>
 #endif
 
-#define MESSAGE_LOG(message) (std::cout << (message) << " " << __FILE__ << " " << __LINE__ << std::endl);
-#define MESSAGE_LOG_ObJ(message, object) (std::cout << (message) << " " << (object) << " " << __FILE__ << " " << __LINE__ << std::endl);
+#define MESSAGE_LOG(message) (std::cout << (message) << " " << __FUNCTION__ << " " << __FILE__ << " " << __LINE__ << std::endl);
+#define MESSAGE_LOG_ObJ(message, object) (std::cout << (message) << " " << (object) << " " << __FUNCTION__ << " " << __FILE__ << " " << __LINE__ << std::endl);
 
 #endif

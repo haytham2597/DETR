@@ -310,7 +310,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-1.13.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include;K:\FrameworksForC\Eigen\eigen-3.4.0\Include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -330,7 +330,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-2.0.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include;K:\FrameworksForC\Eigen\eigen-3.4.0\Include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -350,7 +350,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-1.13.0+cu117\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include;K:\FrameworksForC\Eigen\eigen-3.4.0\Include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -372,7 +372,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\include;K:\FrameworksForC\LibTorch\libtorch-win-shared-with-deps-debug-2.0.0+cu117\libtorch\include\torch\csrc\api\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include;K:\FrameworksForC\opencv\opencv-4.0.1\build\include;K:\FrameworksForC\Eigen\eigen-3.4.0\Include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -396,16 +396,20 @@
     <ClInclude Include="conditional_detr.h" />
     <ClInclude Include="custom_stack.h" />
     <ClInclude Include="dataset.h" />
+    <ClInclude Include="datatype.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="deformable_detr.h" />
     <ClInclude Include="conditional_detr_net.h" />
     <ClInclude Include="deformable_transformer.h" />
     <ClInclude Include="ext.h" />
+    <ClInclude Include="hungarianoper.h" />
     <ClInclude Include="hungarian_algorithm.h" />
     <ClInclude Include="hungarian_matcher.h" />
     <ClInclude Include="hungarian_optimize_lsap.h" />
     <ClInclude Include="layers.h" />
     <ClInclude Include="lsap.h" />
+    <ClInclude Include="matrix.h" />
+    <ClInclude Include="munkres.h" />
     <ClInclude Include="m_assert.h" />
     <ClInclude Include="nested_tensor.h" />
     <ClInclude Include="position_encoding.h" />

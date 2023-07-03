@@ -8,13 +8,13 @@
 
 int main()
 {
-    std::vector<double> costs({ 4,1,3,2,0,5,3,2,2 });
+    /*std::vector<double> costs({ 4,1,3,2,0,5,3,2,2 });
     auto cost = torch::from_blob(costs.data(), { 3,3 }, torch::kDouble);
     std::cout << "COST: " << cost << std::endl;
-    LinearSumAssignment line = LinearSumAssignment(cost, false);
-
-	/*conditional_detrnet* conditional = new conditional_detrnet(37);
-	conditional->run();*/
+    LinearSumAssignment line = LinearSumAssignment(cost, false);*/
+    
+	conditional_detrnet* conditional = new conditional_detrnet(37);
+	conditional->run();
 
 
     /*torch::Device device("cpu");

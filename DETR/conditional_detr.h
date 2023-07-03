@@ -68,6 +68,7 @@ public:
 	}
 	torch::OrderedDict<std::string, torch::Tensor> forward(NestedTensor samples)
 	{
+		MESSAGE_LOG("Forward");
 		//std::cout << "sample tensor size (Supossed to be [bs, 3, H, W]): " << samples.tensors_.sizes() << std::endl;
 		auto features_pos = joiner_.forward(samples);
 		auto features = std::get<0>(features_pos);
@@ -174,7 +175,7 @@ public:
 		weight_dict_["loss_dice"] = 1;
 	}
 	
-	void loss_labels(torch::OrderedDict<std::string, torch::Tensor> output, std::vector<torch::OrderedDict<std::string, torch::Tensor>> targets, std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, torch::Scalar num_boxes)
+	void loss_labels(torch::OrderedDict<std::string, torch::Tensor> output, const std::vector<torch::OrderedDict<std::string, torch::Tensor>>& targets, std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, int num_boxes)
 	{
 		torch::OrderedDict<std::string, torch::Tensor> result_dicts;
 		auto idx = get_permutation_idx(indices);
@@ -204,7 +205,7 @@ public:
 		torch::OrderedDict<std::string, torch::Tensor> losses;
 		return losses;
 	}
-	void loss_boxes(torch::OrderedDict<std::string, torch::Tensor> output, std::vector<torch::OrderedDict<std::string, torch::Tensor>> targets, std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, torch::Scalar num_boxes)
+	void loss_boxes(torch::OrderedDict<std::string, torch::Tensor> output, const std::vector<torch::OrderedDict<std::string, torch::Tensor>>& targets, std::vector<std::tuple<torch::Tensor, torch::Tensor>> indices, int num_boxes)
 	{
 		//torch::OrderedDict<std::string, torch::Tensor> losses;
 		auto idx = get_permutation_idx(indices);
@@ -212,7 +213,8 @@ public:
  		//auto src_boxes = output["pred_boxes"].detach().to(torch::kCPU).index({ std::get<0>(idx), std::get<1>(idx) });
 		auto src_boxes = output["pred_boxes"].index({ std::get<0>(idx), std::get<1>(idx) }).cpu();
 		std::vector<torch::Tensor> tgt_boxes_vec;
-		for (uint64_t i = 0; i < indices.size(); i++) {
+
+		for (int64_t i = 0; i < indices.size(); i++) {
 			const auto squez = std::get<1>(indices[i]);
 
 			std::cout << "Squeeze size: " << squez.sizes() << "dtype: " << squez.dtype().name() << "Device : " << squez.get_device() << std::endl;
@@ -231,7 +233,7 @@ public:
 		losses_["loss_giou"] = loss_giou.sum() / num_boxes;
 	}
 
-	std::unordered_map<std::string, torch::Tensor> forward(torch::OrderedDict<std::string, torch::Tensor> outputs, std::vector<torch::OrderedDict<std::string, torch::Tensor>> targets)
+	std::unordered_map<std::string, torch::Tensor> forward(const torch::OrderedDict<std::string, torch::Tensor>& outputs, const std::vector<torch::OrderedDict<std::string, torch::Tensor>>& targets)
 	{
 		//if(outputs[])
 		/*""" This performs the loss computation.
@@ -245,16 +247,24 @@ public:
 			if (v.key() != "aux_outputs")
 				outputs_without_aux.insert(v.key(), v.value());
 
-		auto indices = matcher_->forward(outputs_without_aux, targets);
+		/*for (int64_t i = 0; i < targets.size(); i++)
+		{
+			for(auto v : targets[i])
+			{
+				std::cout << "Key: " << v.key() << ", " << v.value() << std::endl;
+			}
+		}*/
+
+		const auto indices = matcher_->forward(outputs_without_aux, targets);
 		/*if (indices.size() == 0)
 			return this->losses_;*/
-		int64_t num_boxes = 0;
+		int num_boxes = 0;
 		for(uint64_t i=0;i<targets.size();i++)
-			num_boxes += targets[i]["labels"].size(0);
+			num_boxes += static_cast<int>(targets[i]["labels"].size(0));
 
-		MESSAGE_LOG("Num boxes: " + std::to_string(num_boxes))
+		/*MESSAGE_LOG("Num boxes: " + std::to_string(num_boxes))
 		auto num_box = torch::from_blob(std::vector<int64_t>({ num_boxes }).data(), { 1 }, torch::kFloat);
-		auto num_box_scalar = torch::clamp(num_box, 1).item();
+		auto num_box_scalar = torch::clamp(num_box, 1).item();*/
 		/*
 		std::cout << "_-----------_ START COND" << std::endl;
 		for(auto d : outputs)
@@ -276,8 +286,8 @@ public:
 		//std::cout << "Indices: " << indices << std::endl;
 		std::cout << "numbox_scalar: " << num_box_scalar << std::endl;
 		std::cout << "_-----------_ END COND" << std::endl;*/
-		//loss_labels(outputs, targets, indices, num_box_scalar);
-		loss_boxes(outputs, targets, indices, num_box_scalar);
+		//loss_labels(outputs, targets, indices, num_boxes);
+		loss_boxes(outputs, targets, indices, num_boxes);
 		/*outputs.clear();
 		targets.clear();*/
 		return this->losses_;

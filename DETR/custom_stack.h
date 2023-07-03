@@ -19,19 +19,24 @@ struct CustomStackV2;
 template<typename U, typename V>
 struct CustomStackV2<torch::data::Example<U,V>> : public torch::data::transforms::Collation<torch::data::Example<U, std::vector<V>>, std::vector<torch::data::Example<U,V>>>
 {
+	
 	torch::data::Example<U, std::vector<V>> apply_batch(std::vector<torch::data::Example<U, V>> examples) override
 	{
 		std::vector<torch::Tensor> data;
 		std::vector<V> vec;
 		data.reserve(examples.size());
 		vec.reserve(examples.size());
-		for (auto& sample : examples)
+		for (auto &sample : examples)
 		{
-			data.push_back(sample.data);
-			vec.push_back(sample.target);
+			//std::cout << "SampleData size and Device: " << sample.data.sizes() << ", " << sample.data.get_device() << std::endl;
+			data.push_back(std::move(sample.data));
+			vec.push_back(std::move(sample.target));
 			/*for(auto v : sample.target)
 			{
-				std::cout << "Key: " << v.key() << " value: " << v.value() << " " << __FILE__ << std::endl;
+				if(v.first == "labels")
+				{
+					std::cout << "Key CustomStack: " << v.first << " value: " << v.second << " " << __FILE__ << std::endl;
+				}
 			}*/
 		}
 		return { torch::stack(data), vec };
