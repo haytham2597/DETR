@@ -77,20 +77,23 @@ inline torch::Tensor sigmoid_focal_loss(torch::Tensor inputs, torch::Tensor targ
 	return loss.mean(1).sum() / num_boxes;
 }
 
-inline std::vector<torch::Tensor> accuracy(torch::Tensor output, torch::Tensor target, int topk = 1)
+inline std::vector<torch::Tensor> accuracy(const torch::Tensor output, const torch::Tensor target, int topk = 1)
 {
 	if (target.numel() == 0) {
 		return { torch::zeros({0}) };
 	}
-	auto maxk = topk;
-	auto bs = target.size(0);
-	auto pred = std::get<1>(output.topk(maxk, 1, true, true));
+	//auto maxk = topk;
+	int64_t bs = target.size(0);
+	auto pred = std::get<1>(output.topk(static_cast<int64_t>(topk), 1, true, true));
 	pred = pred.t();
-	auto correct = pred.eq(target.view({ 1,-1 }).expand_as(pred));
+	pred = pred.to(torch::kCPU);
+	std::cout << "Pred device and type: " << pred.get_device() << " " << pred.dtype().name() << std::endl;
+	std::cout << "Target device and type: " << target.get_device() << " " << target.dtype().name() << std::endl;
+	const torch::Tensor correct = pred.eq(target.reshape({ 1,-1 }).expand_as(pred));
 	std::vector<torch::Tensor> res;
 	for(int i=0;i<topk;i++)
 	{
-		auto correct_k = correct.index({ torch::indexing::Slice(), i }).view({ -1 }).to(torch::kFloat).sum(0);
+		torch::Tensor correct_k = correct.index({ torch::indexing::Slice(), i }).reshape({ -1 }).to(torch::kFloat).sum(0);
 		res.push_back(correct_k.mul_(100/bs));
 	}
 	return res;
@@ -114,7 +117,7 @@ inline torch::Tensor cv8uc3ToTensor(cv::Mat frame, bool use_fp32 = true)
 	//frame.convertTo(frame, CV_32FC3);
 #endif*/
 	frame.convertTo(frame, use_fp32 ? CV_32FC(frame.channels()) : CV_16FC(frame.channels()));
-	auto input_tensor = torch::from_blob(frame.data, { frame.rows, frame.cols, frame.channels() }, use_fp32 ? at::kFloat : at::kHalf);
+	auto input_tensor = torch::from_blob(frame.data, { static_cast<int64_t>(frame.rows), static_cast<int64_t>(frame.cols), static_cast<int64_t>(frame.channels()) }, use_fp32 ? at::kFloat : at::kHalf);
 	input_tensor = input_tensor.permute({ 2, 1, 0 });
 	input_tensor = input_tensor.div(255);
 	return input_tensor;

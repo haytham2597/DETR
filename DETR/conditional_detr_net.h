@@ -3,14 +3,21 @@
 #ifndef MODULES_CONDITIONAL_DETR_NET_H
 #define MODULES_CONDITIONAL_DETR_NET_H
 
-#include "backbone.h"
-#include "conditional_detr.h"
-#include "custom_stack.h"
-#include "dataset.h"
+#include "models/backbone.h"
+#include "models/conditional_detr.h"
+#include "libs/datasets/custom_stack.h"
+#include "libs/datasets/dataset.h"
 #include "cmath"
 #include <cuda.h>
 #include <torch/cuda.h>
 #include <cuda_runtime.h>
+
+#ifndef LIBS_DEFINITIONS_H
+#include "libs/definitions.h"
+#endif
+
+#include "libs/layers.h"
+#include "libs/util/nested_tensor.h"
 
 typedef struct _configs {
 	double lr;
@@ -43,7 +50,7 @@ private:
 	torch::optim::Optimizer* optimizer = nullptr;
 	SetCriterion criterion;
 	//torch::optim::LRScheduler lr_scheduler = torch::optim::LRScheduler();
-	std::unique_ptr<torch::data::StatelessDataLoader<torch::data::datasets::MapDataset<dataset_detr, CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>>, torch::data::samplers::SequentialSampler>> dataloader = nullptr;
+	std::unique_ptr<torch::data::StatelessDataLoader<torch::data::datasets::MapDataset<dataset_detr, CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>>, torch::data::samplers::RandomSampler>> dataloader = nullptr;
 protected:
 	config params;
 
@@ -79,36 +86,28 @@ public:
 	void build_module()
 	{
 		conditional_detr_.to(device);
-		criterion.to(device);
+		//criterion.to(device);
 		if (!params.use_fp32) {
 			conditional_detr_.to(torch::kHalf);
-			criterion.to(torch::kHalf);
+			//criterion.to(torch::kHalf);
 		}
 
 		int64_t num_parameters=0;
-		for(auto v : conditional_detr_.parameters())
-		{
+		for(const auto& v : conditional_detr_.parameters())
 			if(v.requires_grad())
 				num_parameters+=v.numel();
-		}
 		MESSAGE_LOG("Number of Parameters: " + std::to_string(num_parameters))
 		//std::cout << "Number of parameters: " << std::to_string(num_parameters) << std::endl;
-
 		if (optimizer == nullptr)
 			optimizer = new torch::optim::AdamW(conditional_detr_.parameters(), torch::optim::AdamWOptions(params.lr).weight_decay(params.weight_decays));
 	}
-	void add_data(std::string yolopath, bool usefp32)
-	{
-		
-		//cv::glob()
-		//dataset_.add_data()
-	}
+
 	void run()
 	{
 		for(int i=0;i<params.nEpochs;i++)
 		{
-			conditional_detr_.train();
-			criterion.train();
+			/*conditional_detr_.train();
+			criterion.train();*/
 			//train epoch
 			trainnet();
 			valnet();
@@ -130,7 +129,7 @@ public:
 		if(dataloader == nullptr)
 		{
 			auto transf = dataset_train_.map(CustomStackV2<torch::data::Example<torch::Tensor, torch::OrderedDict<std::string, torch::Tensor>>>());
-			dataloader = torch::data::make_data_loader<torch::data::samplers::SequentialSampler>(std::move(transf), params.trainBatchSize);
+			dataloader = torch::data::make_data_loader<torch::data::samplers::RandomSampler>(std::move(transf), params.trainBatchSize);
 		}
 		//std::cout << "PRUEBA: " << dataset_train_->get(0).target["labels"] << std::endl;
  		const auto start = std::chrono::high_resolution_clock::now();
@@ -158,32 +157,48 @@ public:
 			//std::cout << "Size da.size(): " << da.sizes() << std::endl;
 			auto sample = conditional_detr_.forward(nested);
 			auto loss = criterion.forward(sample, batch.target);
+
 			
-			
-			std::vector<torch::Tensor> losses;
-			for (const auto& v : loss)
-			for (const auto& u : criterion.weight_dict_) {
-				if (u.first == v.first) {
-					losses.push_back(u.second * v.second);
+			torch::Tensor losses = torch::zeros(at::IntArrayRef({}), torch::kFloat);
+			//std::vector<torch::Tensor> losses;
+			for (const auto& v : loss) {
+
+				std::cout << v.first << " value: " << v.second << std::endl;
+
+				for (const auto& u : criterion.weight_dict_) {
+					if (u.first == v.first) {
+						losses += u.second * v.second.to(torch::kCPU);
+						//losses.push_back(u.second * v.second);
+					}
 				}
 			}
+			
+			
 			optimizer->zero_grad();
-			if(losses.size() == 1)
+			std::cout << "Losses: " << losses << std::endl;
+			losses.backward();
+			/*if(losses.size() == 1)
 			{
 				std::cout << "Losses: " << losses << std::endl;
 				losses[0].backward();
 			}
 			else if(losses.size() > 1)
 			{
-				for (int i = 0; i < losses.size(); i++)
+				for (uint64_t i = 0; i < losses.size(); i++)
 					std::cout << "Losses size matrix: " << losses[i].sizes() << std::endl;
-				auto lero = torch::cat(losses);
-				lero = lero.sum();
-				MESSAGE_LOG(lero.sizes())
-				MESSAGE_LOG(lero)
-				//std::cout << "Lero: " << lero << std::endl;
-				lero.backward();
-			}
+
+				if (losses[0].sizes() != torch::IntArrayRef({}))
+				{
+					
+					std::cout << "lero: " << lero << std::endl;
+					lero = lero.sum();
+
+					MESSAGE_LOG(lero.sizes())
+					MESSAGE_LOG(lero)
+					//std::cout << "Lero: " << lero << std::endl;
+					lero.backward();
+				}
+			}*/
 			optimizer->step();
 			std::cout << "Batch Index: " << batch_index << std::endl;
 			batch_index++;

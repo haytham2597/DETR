@@ -4,6 +4,7 @@
 #define LIBS_NESTED_TENSOR_H
 
 #include "torch/torch.h"
+#include "../definitions.h"
 
 class NestedTensor {
 public:
@@ -12,7 +13,7 @@ public:
 
 	NestedTensor(const torch::Tensor& tensors)
 	{
-		MESSAGE_LOG_ObJ("Sizes tensor:",tensors.sizes())
+		MESSAGE_LOG_OBJ("Sizes tensor:",tensors.sizes())
 		//this->tensors_ = tensors;
 		this->tensors_ = tensors;
 		auto mask = torch::ones({ tensors.size(0),tensors.size(2),tensors.size(3) }, torch::kBool).fill_(false).to(tensors_.device());

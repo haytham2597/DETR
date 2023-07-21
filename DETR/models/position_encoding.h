@@ -4,7 +4,7 @@
 #define MODELS_POSITION_ENCODING
 
 //#include <torch/torch.h>
-#include "nested_tensor.h"
+#include "../libs/util/nested_tensor.h"
 
 
 typedef torch::indexing::Slice sli;

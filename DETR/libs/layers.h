@@ -5,8 +5,8 @@
 
 #include <torch/torch.h>
 
-#include "attention.h"
-#include "ext.h"
+#include "models/attention.h"
+#include "util/ext.h"
 
 /**
  * \brief [STABLE WORK]
@@ -729,7 +729,7 @@ namespace conditional_detr
 			pos_y = torch::stack({ pos_y.index({torch::indexing::Slice(),torch::indexing::Slice(), torch::indexing::Slice(0, torch::indexing::None, 2) }).sin(), pos_y.index({torch::indexing::Slice(),torch::indexing::Slice(), torch::indexing::Slice(1, torch::indexing::None, 2) }).cos() }, 3).flatten(2);
 			return torch::cat({ pos_x, pos_y }, 2);
 		}
-		std::tuple<torch::Tensor, torch::Tensor> forward(torch::Tensor tgt, torch::Tensor memory, torch::Tensor tgt_mask = {}, torch::Tensor memory_mask = {}, torch::Tensor tgt_key_padding_mask = {}, torch::Tensor memory_key_padding_mask = {}, torch::Tensor pos = {}, torch::Tensor query_pos = {})
+		std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor tgt, torch::Tensor memory, torch::Tensor tgt_mask = {}, torch::Tensor memory_mask = {}, torch::Tensor tgt_key_padding_mask = {}, torch::Tensor memory_key_padding_mask = {}, torch::Tensor pos = {}, torch::Tensor query_pos = {})
 		{
 			auto output = tgt;
 			std::vector<torch::Tensor> intermediates;
@@ -761,10 +761,10 @@ namespace conditional_detr
 				}
 			}
 			if (return_intermediate_)
-				return std::make_tuple(torch::stack(intermediates).transpose(1, 2), reference_points);
+				return std::make_pair(torch::stack(intermediates).transpose(1, 2), reference_points);
 				//return torch::stack({ torch::stack(intermediates).transpose(1,2) , reference_points });
 			//return output.unsqueeze(0);
-			return std::make_tuple(output.unsqueeze(0), torch::Tensor{});
+			return std::make_pair(output.unsqueeze(0), torch::Tensor{});
 			//Tiene que tener como salida una TUPLA
 		}
 	};
@@ -798,9 +798,9 @@ namespace conditional_detr
 			encoder->to(torch::kCUDA);
 			decoder->to(torch::kCUDA);
 		}
-		std::tuple<torch::Tensor, torch::Tensor> forward(torch::Tensor src, torch::Tensor mask, torch::Tensor query_embed, torch::Tensor pos_embed)
+		std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor src, torch::Tensor mask, torch::Tensor query_embed, torch::Tensor pos_embed)
 		{
-			MESSAGE_LOG("Forward");
+			MESSAGE_LOG("Forward")
 			//flatten NxCxHxW to HWxNxC
 			const auto siz = src.sizes();
 			auto bs = siz[0];

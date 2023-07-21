@@ -35,79 +35,79 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nested_tensor.h">
+    <ClInclude Include="libs\util\nested_tensor.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="resnet.h">
+    <ClInclude Include="models\resnet.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="layers.h">
+    <ClInclude Include="libs\layers.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="backbone.h">
+    <ClInclude Include="models\backbone.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="position_encoding.h">
+    <ClInclude Include="models\position_encoding.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="hungarian_matcher.h">
+    <ClInclude Include="libs\lsa\hungarian_matcher.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="deformable_transformer.h">
+    <ClInclude Include="models\deformable_transformer.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="ext.h">
+    <ClInclude Include="libs\util\ext.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="deformable_detr.h">
+    <ClInclude Include="models\deformable_detr.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="boxes.h">
+    <ClInclude Include="libs\util\boxes.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="hungarian_algorithm.h">
+    <ClInclude Include="libs\lsa\hungarian_algorithm.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="conditional_detr.h">
+    <ClInclude Include="models\conditional_detr.h">
       <Filter>Header Files\models</Filter>
     </ClInclude>
-    <ClInclude Include="attention.h">
+    <ClInclude Include="models\attention.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="lsap.h">
+    <ClInclude Include="libs\lsa\lsap.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="conditional_detr_net.h">
       <Filter>Header Files\modules</Filter>
     </ClInclude>
-    <ClInclude Include="dataset.h">
+    <ClInclude Include="libs\datasets\dataset.h">
       <Filter>Header Files\modules</Filter>
     </ClInclude>
-    <ClInclude Include="custom_stack.h">
+    <ClInclude Include="libs\datasets\custom_stack.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="m_assert.h">
+    <ClInclude Include="libs\util\m_assert.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="definitions.h">
+    <ClInclude Include="libs\definitions.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="solver.h">
+    <ClInclude Include="libs\lsa\solver.h">
       <Filter>Header Files\modules\linear_sum_assignment</Filter>
     </ClInclude>
-    <ClInclude Include="hungarian_optimize_lsap.h">
+    <ClInclude Include="libs\lsa\hungarian_optimize_lsap.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="munkres.h">
+    <ClInclude Include="libs\lsa\munkres.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="matrix.h">
+    <ClInclude Include="libs\matrix.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="hungarianoper.h">
+    <ClInclude Include="libs\lsa\hungarianoper.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
-    <ClInclude Include="datatype.h">
+    <ClInclude Include="libs\datatype.h">
       <Filter>Header Files\libs</Filter>
     </ClInclude>
   </ItemGroup>

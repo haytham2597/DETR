@@ -5,9 +5,11 @@
 
 #include <utility>
 
-#include "nested_tensor.h"
+#include "../libs/util/nested_tensor.h"
+#include "../libs/layers.h"
 #include "position_encoding.h"
 #include "resnet.h"
+
 
 class BackboneBase : public torch::nn::Module
 {
@@ -21,7 +23,7 @@ public:
 		if (!train_backbone) 
 			for (auto v : resnet_.named_parameters())
 				if (v.key() != "layer2" || v.key() != "layer3" || v.key() != "layer4")
-					v.value().requires_grad_(false);
+					v.value() = v.value().requires_grad_(false);
 
 		strides = { 32 };
 		num_channels = 2048;
@@ -71,7 +73,7 @@ public:
 		backbone_ = std::move(backbone);
 		position_embedding_ = std::move(position_embedding);
 	}
-	std::tuple<NestedTensor, torch::Tensor> forward(const NestedTensor nested)
+	std::pair<NestedTensor, torch::Tensor> forward(const NestedTensor nested)
 	{
 		auto nest = backbone_.forward(nested);
 		auto m = nest.masks_;
@@ -93,7 +95,7 @@ public:
 
 		auto pos = position_embedding_.forward(nest).to(nest.tensors_.dtype());
 		//std::cout << "Pos from Joiner sizes: " << pos.sizes() << std::endl;
-		return std::make_tuple(nest, pos);
+		return std::make_pair(nest, pos);
 		/*nested = backbone_.forward(nested.tensors_);
 		auto pos =position_embedding_.forward(nested).to(nested.tensors_.dtype());
 		if (pos.defined())

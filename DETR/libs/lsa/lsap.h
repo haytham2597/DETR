@@ -93,7 +93,7 @@ namespace linear_sum_assignment {
         return sink;
     }
 
-    static int solve(torch::Tensor te, bool maximize, std::tuple<torch::Tensor, torch::Tensor>& indices)
+    static int solve(torch::Tensor te, bool maximize, std::pair<torch::Tensor, torch::Tensor>& indices)
     {
         //INFO Assuming "te" is a Tensor rectangular matrix [M,N] OR [N,N]
         int nr = static_cast<int>(te.size(0));
@@ -101,9 +101,9 @@ namespace linear_sum_assignment {
 
         auto tens_col = torch::zeros({ nr }, torch::kInt64);
         auto tens_row = torch::zeros({ nr }, torch::kInt64);
-        indices = std::make_tuple(tens_row, tens_col);
+        indices = std::make_pair(tens_row, tens_col);
 
-        std::cout << "NR: " << nr << ", " << "NC: " << nc << std::endl;
+        //std::cout << "NR: " << nr << ", " << "NC: " << nc << std::endl;
         if (nr == 0 || nc == 0)
             return 0;
         const bool transpose = nc < nr;
@@ -188,7 +188,8 @@ namespace linear_sum_assignment {
                 tens_row[i] = col4row[i];
             }
         }
-        indices = std::make_tuple(tens_row, tens_col);
+        indices = std::make_pair(tens_col, tens_row);
+        //std::cout << "Print tens col: " << tens_col << " " << __LINE__ << " " << __FILE__ << std::endl;
         return 0;
     }
 }

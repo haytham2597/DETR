@@ -5,7 +5,7 @@
 
 #include <torch/torch.h>
 #include <iostream>
-#include "layers.h"
+#include "../libs/layers.h"
 
 //TODO: replace_stride_dilation 
 template<typename Contained>
