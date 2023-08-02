@@ -800,7 +800,6 @@ namespace conditional_detr
 		}
 		std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor src, torch::Tensor mask, torch::Tensor query_embed, torch::Tensor pos_embed)
 		{
-			MESSAGE_LOG("Forward")
 			//flatten NxCxHxW to HWxNxC
 			const auto siz = src.sizes();
 			auto bs = siz[0];

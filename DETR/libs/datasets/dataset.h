@@ -29,8 +29,8 @@ public:
 		{
 			torch::OrderedDict<std::string, torch::Tensor> target;
 			cv::Mat m = cv::imread(imgs[i]); //TODO: augment size width
-			auto w = m.cols;
-			auto h = m.rows;
+			int w_original = m.cols;
+			int h_original = m.rows;
 			
 			const cv::Size2d original = cv::Size2d(m.cols, m.rows);
 			cv::resize(m, m, cv::Size(800, 800));
@@ -49,25 +49,26 @@ public:
 				split_str(str, ' ', spl);
 				int pos = 0; 
 				int id = std::stoi(spl[pos++]);
-				double x_c =  std::stod(spl[pos++])* static_cast<double>(res.width) / static_cast<double>(original.width);
-				double y_c = std::stod(spl[pos++])* static_cast<double>(res.height) / static_cast<double>(original.height);
-				double w = std::stod(spl[pos++])* static_cast<double>(res.width) / static_cast<double>(original.width);
-				double h = std::stod(spl[pos++])* static_cast<double>(res.height) / static_cast<double>(original.height);
-				boxescomple.push_back(x_c);
-				boxescomple.push_back(y_c);
-				boxescomple.push_back(w);
-				boxescomple.push_back(h);
+				double x_c =  (std::stod(spl[pos++])* static_cast<double>(res.width)) / static_cast<double>(original.width);
+				double y_c = (std::stod(spl[pos++])* static_cast<double>(res.height)) / static_cast<double>(original.height);
+				double w = (std::stod(spl[pos++])* static_cast<double>(res.width)) / static_cast<double>(original.width);
+				double h = (std::stod(spl[pos++])* static_cast<double>(res.height)) / static_cast<double>(original.height);
+				boxescomple.push_back(static_cast<float>(x_c));
+				boxescomple.push_back(static_cast<float>(y_c));
+				boxescomple.push_back(static_cast<float>(w));
+				boxescomple.push_back(static_cast<float>(h));
 				
 				classes_vec.push_back(id);
 				count++;
 			}
-			auto label = torch::from_blob(classes_vec.data(), { static_cast<int64_t>(classes_vec.size()) }, torch::kInt64).clone();
+			//Tensors Should be cloned because the reference instrusive PTR is decreased at 0 and deleted pointer, that is bad that why should cloned
+			auto label = torch::from_blob(classes_vec.data(), { static_cast<int64_t>(classes_vec.size()) }, torch::kInt64).clone(); 
 			auto size = torch::from_blob(std::vector<int>({ m.cols, m.rows }).data(), { 2,1 }, torch::kInt).clone();
 			auto boxesco = torch::from_blob(boxescomple.data(), { count, 4 }, torch::kFloat).clone();
 			
 			target.insert("boxes", boxesco);
 			target.insert("labels", label);
-			target.insert("orig_size", torch::from_blob(std::vector<int>({ w, h }).data(), { 2,1 }, at::kInt).clone());
+			target.insert("orig_size", torch::from_blob(std::vector<int>({ w_original, h_original }).data(), { 2,1 }, at::kInt).clone());
 			target.insert("size", size);
 			this->examples_.push_back({ img, target });
 

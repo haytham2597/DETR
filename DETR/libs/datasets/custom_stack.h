@@ -28,16 +28,8 @@ struct CustomStackV2<torch::data::Example<U,V>> : public torch::data::transforms
 		vec.reserve(examples.size());
 		for (auto &sample : examples)
 		{
-			//std::cout << "SampleData size and Device: " << sample.data.sizes() << ", " << sample.data.get_device() << std::endl;
 			data.push_back(std::move(sample.data));
 			vec.push_back(std::move(sample.target));
-			/*for(auto v : sample.target)
-			{
-				if(v.first == "labels")
-				{
-					std::cout << "Key CustomStack: " << v.first << " value: " << v.second << " " << __FILE__ << std::endl;
-				}
-			}*/
 		}
 		return { torch::stack(data), vec };
 	}

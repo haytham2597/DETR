@@ -53,8 +53,8 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		torch::NoGradGuard no_grad;
 		//TODO: Test this torch::OrderedDict
 
-		TORCH_CHECK(outputs["pred_logits"].sizes() == torch::IntArrayRef({2,300,37}), "Expected size: ", at::IntArrayRef({ 2,300,37 }), " but got: ", outputs["pred_logits"].sizes())
-		TORCH_CHECK(outputs["pred_boxes"].sizes() == torch::IntArrayRef({ 2,300,4 }), "Expected size: ", at::IntArrayRef({ 2,300,4 }), " but got: ", outputs["pred_boxes"].sizes())
+		//TORCH_CHECK(outputs["pred_logits"].sizes() == torch::IntArrayRef({2,300,37}), "Expected size: ", at::IntArrayRef({ 2,300,37 }), " but got: ", outputs["pred_logits"].sizes())
+		//TORCH_CHECK(outputs["pred_boxes"].sizes() == torch::IntArrayRef({ 2,300,4 }), "Expected size: ", at::IntArrayRef({ 2,300,4 }), " but got: ", outputs["pred_boxes"].sizes())
 
 		int64_t bs = outputs["pred_logits"].size(0);
 		int64_t num_queries = outputs["pred_logits"].size(1);
@@ -62,8 +62,8 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		torch::Tensor out_prob = outputs["pred_logits"].flatten(0, 1).sigmoid();
 		torch::Tensor out_bbox = outputs["pred_boxes"].flatten(0, 1);
 
-		TORCH_CHECK(out_prob.sizes() == torch::IntArrayRef({ static_cast<int64_t>(2 * 300),37 }), "Expected size: ", at::IntArrayRef({ 2*300,37 }), " but got: ", out_prob.sizes())
-		TORCH_CHECK(out_bbox.sizes() == torch::IntArrayRef({ static_cast<int64_t>(2 * 300),4 }), "Expected size: ", at::IntArrayRef({ 2 * 300,4 }), " but got: ", out_bbox.sizes())
+		//TORCH_CHECK(out_prob.sizes() == torch::IntArrayRef({ static_cast<int64_t>(2 * 300),37 }), "Expected size: ", at::IntArrayRef({ 2*300,37 }), " but got: ", out_prob.sizes())
+		//TORCH_CHECK(out_bbox.sizes() == torch::IntArrayRef({ static_cast<int64_t>(2 * 300),4 }), "Expected size: ", at::IntArrayRef({ 2 * 300,4 }), " but got: ", out_bbox.sizes())
 
 		std::vector<torch::Tensor> tgt_ids_vec;
 		std::vector<torch::Tensor> tgt_bbox_vec;
@@ -116,7 +116,7 @@ struct HungarianMatcherImpl : public torch::nn::Module
 		for(int64_t i =0;i<static_cast<int64_t>(vec_tensor.size());i++)
 		{
 			std::pair<torch::Tensor, torch::Tensor> v_tuple;
-			int solve = linear_sum_assignment::solve(vec_tensor[i][i], false, v_tuple);
+			int solve = linear_sum_assignment::solve(vec_tensor[i][i], false, v_tuple); //WARNING: Fix this, because if matrix is all same should return indices sort
 			//std::cout << "Print tuple indices: " << std::get<1>(v_tuple) << std::endl;
 
 			/*MESSAGE_LOG_OBJ("Index i sizes: ", v_tuple.first)

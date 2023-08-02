@@ -27,7 +27,7 @@ typedef struct _configs {
 	/**
 	 * \brief if trainBatchSize == -1 is autobatch
 	 */
-	int trainBatchSize = 2;
+	int trainBatchSize = 8;
 	int testBatchSize;
 	bool use_fp32 = true;
 	bool augments = false;
@@ -138,13 +138,11 @@ public:
 		criterion.train();
 		for (auto& batch : *dataloader)
 		{
-			MESSAGE_LOG("Batch")
 			auto nested = NestedTensor(batch.data);
 			nested.to(this->device);
-			MESSAGE_LOG("NestedTensor")
 			//auto da = batch.data.to(this->device);
 			
-			for (uint64_t i = 0; i < batch.target.size(); i++) {
+			/*for (uint64_t i = 0; i < batch.target.size(); i++) {
 				for (auto& n : batch.target[i]) {
 					
 					//n.value().to(this->device);
@@ -153,7 +151,7 @@ public:
 						std::cout << "BatchTarget: [" << n.key() << "]" << n.value() << std::endl;
 					}
 				}
-			}
+			}*/
 			//std::cout << "Size da.size(): " << da.sizes() << std::endl;
 			auto sample = conditional_detr_.forward(nested);
 			auto loss = criterion.forward(sample, batch.target);
@@ -164,7 +162,6 @@ public:
 			for (const auto& v : loss) {
 
 				std::cout << v.first << " value: " << v.second << std::endl;
-
 				for (const auto& u : criterion.weight_dict_) {
 					if (u.first == v.first) {
 						losses += u.second * v.second.to(torch::kCPU);

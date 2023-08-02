@@ -66,10 +66,9 @@ public:
 	}
 	torch::OrderedDict<std::string, torch::Tensor> forward(NestedTensor samples)
 	{
-		
-		TORCH_CHECK(samples.tensors_.sizes() == torch::IntArrayRef({2,3,800,800}), "Expected size: ", at::IntArrayRef({2,3,800,800}), " but got: ", samples.tensors_.sizes())
-		TORCH_CHECK(samples.masks_.sizes() == torch::IntArrayRef({ 2,800,800 }), "Expected size: ", at::IntArrayRef({ 2,800,800 }), " but got: ", samples.masks_.sizes())
-		MESSAGE_LOG("Forward")
+		//TORCH_CHECK(samples.tensors_.sizes() == torch::IntArrayRef({2,3,800,800}), "Expected size: ", at::IntArrayRef({2,3,800,800}), " but got: ", samples.tensors_.sizes())
+		//TORCH_CHECK(samples.masks_.sizes() == torch::IntArrayRef({ 2,800,800 }), "Expected size: ", at::IntArrayRef({ 2,800,800 }), " but got: ", samples.masks_.sizes())
+		//MESSAGE_LOG("Forward")
 		std::pair<NestedTensor, torch::Tensor> features_pos = joiner_.forward(std::move(samples));
 		NestedTensor features = features_pos.first;
 		torch::Tensor pos = features_pos.second;
@@ -188,8 +187,8 @@ public:
 			tgt_classes_o_vec.push_back(targets[i]["labels"].index({indices[i].second}));
 		torch::Tensor target_classes_o = torch::cat(tgt_classes_o_vec);
 		torch::Tensor target_classes = torch::full({src_logits.size(0), src_logits.size(1)}, num_class_, torch::TensorOptions(torch::kInt64).device(src_logits.device()));
-		MESSAGE_LOG_OBJ("TargetClasses_o Size: ", target_classes_o.sizes())
-		MESSAGE_LOG_OBJ("TargetClasses Size: ", target_classes.sizes())
+		/*MESSAGE_LOG_OBJ("TargetClasses_o Size: ", target_classes_o.sizes())
+		MESSAGE_LOG_OBJ("TargetClasses Size: ", target_classes.sizes())*/
 		
 		target_classes.index({ idx.first, idx.second }) = target_classes_o;
 
@@ -214,24 +213,15 @@ public:
  		//auto src_boxes = output["pred_boxes"].detach().to(torch::kCPU).index({ std::get<0>(idx), std::get<1>(idx) });
 		const torch::Tensor src_boxes = output["pred_boxes"].index({ idx.first, idx.second }).to(torch::kCPU);
 		std::vector<torch::Tensor> tgt_boxes_vec;
-		std::cout << "Indices vector size: " << indices.size() << std::endl;
-		std::cout << "Targets vector size: " << targets.size() << std::endl;
+		
 		for (uint64_t i = 0; i < indices.size(); i++) {
 			torch::Tensor squez = indices[i].second;
-			//std::cout << "Print squeeze: " << squez << std::endl;
-			//std::cout << "Print target boxes: " << targets[i]["boxes"] << std::endl;
-			std::cout << "Squeeze size: " << squez.sizes() << "dtype: " << squez.dtype().name() << "Device : " << squez.get_device() << std::endl;
-			std::cout << "TargetsBoxes: " << targets[i]["boxes"].sizes() << " dtype: " << targets[i]["boxes"].dtype().name() << " device: " << targets[i]["boxes"].get_device() << std::endl;
 			torch::Tensor setIdx = targets[i]["boxes"].index({ squez });
 			tgt_boxes_vec.push_back(setIdx);
 		}
-		std::cout << "Size [0]: " << tgt_boxes_vec[0].sizes() << std::endl;
 		const torch::Tensor target_boxes = torch::cat(tgt_boxes_vec);
-		std::cout << "src_boxes size: " << src_boxes.sizes() << "dtype: " << src_boxes.dtype().name() << "Device : " << src_boxes.get_device() << std::endl;
-		std::cout << "TargetsBoxes cat: " << target_boxes.sizes()  << " dtype: " << target_boxes.dtype().name() << " device: " << target_boxes.get_device() << std::endl;
 		const torch::Tensor loss_bbox = torch::nn::functional::l1_loss(src_boxes, target_boxes, torch::nn::functional::L1LossFuncOptions(torch::enumtype::kNone()));
 		const torch::Tensor loss_giou = 1 - torch::diag(generalized_box_iou(box_cxcywh_to_xyxy(src_boxes), box_cxcywh_to_xyxy(target_boxes)));
-		
 		losses_["loss_bbox"] = loss_bbox.sum() / num_boxes;
 		losses_["loss_giou"] = loss_giou.sum() / num_boxes;
 	}
@@ -249,50 +239,13 @@ public:
 		for (auto v : outputs)
 			if (v.key() != "aux_outputs")
 				outputs_without_aux.insert(v.key(), v.value());
-
-		/*for (int64_t i = 0; i < targets.size(); i++)
-		{
-			for(auto v : targets[i])
-			{
-				std::cout << "Key: " << v.key() << ", " << v.value() << std::endl;
-			}
-		}*/
-
+		
 		const std::vector<std::pair<torch::Tensor, torch::Tensor>> indices = matcher_->forward(outputs_without_aux, targets);
-		/*if (indices.size() == 0)
-			return this->losses_;*/
-		/*for (int64_t i = 0; i < indices.size(); i++) {
-			auto squez = std::get<1>(indices[i]);
-			std::cout << "Printing indices from forward: " << squez << __FILE__ << " " << __LINE__ << std::endl;
-		}*/
+
 		int num_boxes = 0;
 		for(uint64_t i=0;i<targets.size();i++)
 			num_boxes += static_cast<int>(targets[i]["labels"].size(0));
 
-		/*MESSAGE_LOG("Num boxes: " + std::to_string(num_boxes))
-		auto num_box = torch::from_blob(std::vector<int64_t>({ num_boxes }).data(), { 1 }, torch::kFloat);
-		auto num_box_scalar = torch::clamp(num_box, 1).item();*/
-		/*
-		std::cout << "_-----------_ START COND" << std::endl;
-		for(auto d : outputs)
-		{
-			std::cout << "Outputs ["<< d.key() << "]: " << d.value() << std::endl;
-		}
-		for(int i=0;i<targets.size();i++)
-		{
-			for (auto d : targets[i])
-			{
-				std::cout << "Targets [" << d.key() << "]: " << d.value() << std::endl;
-			}
-		}
-		for(int i=0;i<indices.size();i++)
-		{
-			std::cout << "Indices[0]: " << std::get<0>(indices[i]) << std::endl;
-			std::cout << "Indices[1]: " << std::get<1>(indices[i]) << std::endl;
-		}
-		//std::cout << "Indices: " << indices << std::endl;
-		std::cout << "numbox_scalar: " << num_box_scalar << std::endl;
-		std::cout << "_-----------_ END COND" << std::endl;*/
 		loss_labels(outputs, targets, indices, num_boxes);
 		loss_boxes(outputs, targets, indices, num_boxes);
 		/*outputs.clear();

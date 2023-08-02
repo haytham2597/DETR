@@ -87,8 +87,6 @@ inline std::vector<torch::Tensor> accuracy(const torch::Tensor output, const tor
 	auto pred = std::get<1>(output.topk(static_cast<int64_t>(topk), 1, true, true));
 	pred = pred.t();
 	pred = pred.to(torch::kCPU);
-	std::cout << "Pred device and type: " << pred.get_device() << " " << pred.dtype().name() << std::endl;
-	std::cout << "Target device and type: " << target.get_device() << " " << target.dtype().name() << std::endl;
 	const torch::Tensor correct = pred.eq(target.reshape({ 1,-1 }).expand_as(pred));
 	std::vector<torch::Tensor> res;
 	for(int i=0;i<topk;i++)
